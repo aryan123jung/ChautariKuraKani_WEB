@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function RegisterForm() {
     return (
         <div className="px-10">
@@ -49,7 +51,9 @@ export default function RegisterForm() {
             <div className="flex justify-center py-5">
             <button className="h-10 w-full rounded-md bg-[#76C05D] text-background text-sm font-semibold hover:opacity-90 disabled:opacity-60">Login</button>
             </div>
-            <div className="text-center text-sm">Already have an account?</div>
+            <div className="text-center text-sm">
+                Already have an account? <Link href="/login" className="font-semibold hover:underline">Login</Link>
+            </div>
         </form>
         </div>
     );

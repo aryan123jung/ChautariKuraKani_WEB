@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Form, useForm } from "react-hook-form";
 
 
@@ -26,7 +27,9 @@ export default function LoginForm() {
             <div className="flex justify-center py-5">
             <button className="h-10 w-full rounded-md bg-[#76C05D] text-background text-sm font-semibold hover:opacity-90 disabled:opacity-60">Login</button>
             </div>
-            <div className="text-center text-sm">Don't have an account?</div>
+            <div className="text-center text-sm">
+                Don't have an account?<Link href= "/register" className="font-semibold hover:underline">Signup</Link>
+            </div>
         </form>
         </div>
     );
