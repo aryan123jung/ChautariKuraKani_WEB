@@ -23,7 +23,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="flex items-center justify-center">
-          <div className="w-[800] h-[420] rounded-xl border border-black/10 bg-background/80 p-6 shadow-sm">
+          <div className="w-[800] rounded-xl border border-black/10 bg-background/80 p-6 shadow-sm">
 
             {children}
           </div>
