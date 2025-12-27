@@ -54,8 +54,13 @@ export default function NavBar() {
         </ul>
       </nav>
 
-      <div className="w-12 h-12 rounded-full overflow-hidden mr-5">
-        <img src="/image/person.jpg" alt="Profile" className="w-full h-full object-cover" />
+      <div className="mr-5">
+        <Image
+          src="/image/notification.ico"
+          alt="notification"
+          width={30}
+          height={30}
+        />
      </div>
 
 
@@ -89,22 +94,25 @@ export default function NavBar() {
           </div>
           <ul className="p-4 space-y-2">
             <li>
-              <Link href="/settings" className={sidebarLinkClass("/")}>Settings</Link>
+              <Link href="/" className={sidebarLinkClass("/")}>Home</Link>
             </li>
             <li>
-              <Link href="/messages" className={sidebarLinkClass("/messages")}>Friends</Link>
+              <Link href="/settings" className={sidebarLinkClass("/settings")}>Settings</Link>
+            </li>
+            <li>
+              <Link href="/friends" className={sidebarLinkClass("/friends")}>Friends</Link>
             </li>
             <li>
               <Link href="/chautari" className={sidebarLinkClass("/chautari")}>Chautari</Link>
             </li>
             <li>
-              <Link href="/profile" className={sidebarLinkClass("/profile")}>Notification</Link>
+              <Link href="/notification" className={sidebarLinkClass("/notification")}>Notification</Link>
             </li>
             <li>
-              <Link href="/profile" className={sidebarLinkClass("/profile")}>Messages</Link>
+              <Link href="/message" className={sidebarLinkClass("/message")}>Messages</Link>
             </li>
             <li>
-              <Link href="/profile" className={sidebarLinkClass("/profile")}>Help</Link>
+              <Link href="/help" className={sidebarLinkClass("/help")}>Help</Link>
             </li>
           </ul>
         </div>
