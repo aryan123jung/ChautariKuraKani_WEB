@@ -25,7 +25,7 @@ export default function LoginForm() {
     const Submit = async (values: LoginData) => {
         startTransition(async()=>{
             await new Promise((resolve)=> setTimeout(resolve, 2000));
-            router.push("/home");
+            router.push("/");
         })
         // alert("Successfully Logged in");
     };
