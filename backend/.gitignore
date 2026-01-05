@@ -13,4 +13,4 @@
 .DS_Store
 
 # Test coverage
-/coverage
+/coverage.DS_Store
