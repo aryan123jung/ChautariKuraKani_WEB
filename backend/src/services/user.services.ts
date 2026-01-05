@@ -13,7 +13,7 @@ export class UserService{
         if(checkEmail){
             throw new HttpError(409,"Email already in use");
         }
-        const checkUsername = await await userRepository.getUserByUsername(userData.username);
+        const checkUsername = await userRepository.getUserByUsername(userData.username);
         if(checkUsername){
             throw new HttpError(403, "Username already in use");
         }
