@@ -31,7 +31,7 @@ export class AdminUserService{
         if(!user){
             throw new HttpError(404, "User not found");
         }
-        const result = await userRepository.deleteUser(userId); // boolean | null
+        const result = await userRepository.deleteUser(userId);
         if(!result){
             throw new HttpError(500,"Failed to delete user");
         }
