@@ -220,7 +220,7 @@ const friendsPosts = [
 
 
 
-        <div className="bg-gray-100 rounded-md p-2 flex flex-col h-[100%]">
+        <div className="bg-gray-100 rounded-md p-2 flex flex-col h-[90%]">
           <div className="bg-green-500 text-white px-2 py-1 rounded-t-md font-semibold">AI Chat Bot</div>
           <div className="p-2 space-y-2 flex-1 overflow-y-auto scrollbar-hidden">
             <div className="bg-white rounded-md p-1">Heyyyyyyyyyyyyyyyyy</div>
