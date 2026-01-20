@@ -1,9 +1,8 @@
-"use client";
+"use client"; 
 
 import Image from "next/image";
-import React from "react";
 
-const LandingPage: React.FC = () => {
+export default function LandingPage() {
   return (
     <section className="relative w-full h-screen overflow-hidden">
 
@@ -18,7 +17,7 @@ const LandingPage: React.FC = () => {
       {/* Overlay text ko lagi */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-transparent" />
 
-       <div className="absolute top-6 left-6 z-20 flex items-center gap-3">
+      <div className="absolute top-6 left-6 z-20 flex items-center gap-3">
         <Image
           src="/image/green_half_logo.png"
           alt="ChautariKuraKani Logo"
@@ -35,7 +34,6 @@ const LandingPage: React.FC = () => {
       <div className="relative z-10 max-w-7xl mx-auto h-full px-6 flex items-center">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center w-full">
 
-          
           <div className="text-white">
             <h1 className="text-5xl font-bold leading-tight">
               Connect & Share <br />
@@ -77,6 +75,4 @@ const LandingPage: React.FC = () => {
       </div>
     </section>
   );
-};
-
-export default LandingPage;
+}
