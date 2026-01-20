@@ -44,7 +44,7 @@ export default function RegisterForm() {
   return (
     <div className="px-10">
       <form className="space-y-5" onSubmit={handleSubmit(Submit)}>
-
+        {error && <span>{error}</span>}
         <div className="space-y-1">
           <label htmlFor="firstName" className="text-sm font-medium text-gray-600">
             First Name
@@ -82,6 +82,25 @@ export default function RegisterForm() {
               focus:ring-1 focus:ring-[#76C05D] "/>
               {errors.lastName?.message &&(
                 <p className="text-xs text-red-500">{errors.lastName.message}</p>
+              )}
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="username" className="text-sm font-medium text-gray-600">
+            Username
+          </label>
+          <input
+            id="username"
+            type="text"
+            {...register("username")}
+            placeholder="John_doe213"
+            className=" h-11 w-full rounded-md
+              border border-[#B9B9B9]
+              bg-white px-3 text-sm
+              outline-none
+              focus:border-[#76C05D]
+              focus:ring-1 focus:ring-[#76C05D] "/>
+              {errors.username?.message &&(
+                <p className="text-xs text-red-500">{errors.username.message}</p>
               )}
         </div>
 
