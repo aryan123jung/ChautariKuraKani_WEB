@@ -8,20 +8,46 @@ import { JWT_SECRET } from "../configs";
 
 let userRepository = new UserRepository();
 export class UserService{
-    async registerUser(userData: CreateUserDto){
-        const checkEmail = await userRepository.getUserByEmail(userData.email);
-        if(checkEmail){
-            throw new HttpError(409,"Email already in use");
-        }
-        const checkUsername = await userRepository.getUserByUsername(userData.username);
-        if(checkUsername){
-            throw new HttpError(403, "Username already in use");
-        }
-        const hashedPassword = await bcryptjs.hash(userData.password,10);
-        userData.password = hashedPassword;
-        const newUser = await userRepository.createUser(userData);
-        return newUser;
+    // async registerUser(userData: CreateUserDto){
+    //     const checkEmail = await userRepository.getUserByEmail(userData.email);
+    //     if(checkEmail){
+    //         throw new HttpError(409,"Email already in use");
+    //     }
+    //     const checkUsername = await userRepository.getUserByUsername(userData.username);
+    //     if(checkUsername){
+    //         throw new HttpError(403, "Username already in use");
+    //     }
+    //     const hashedPassword = await bcryptjs.hash(userData.password,10);
+    //     userData.password = hashedPassword;
+    //     const newUser = await userRepository.createUser(userData);
+    //     return newUser;
+    // }
+    async registerUser(userData: CreateUserDto) {
+    const checkEmail = await userRepository.getUserByEmail(userData.email);
+    if (checkEmail) {
+        throw new HttpError(409, "Email already in use");
     }
+
+    const checkUsername = await userRepository.getUserByUsername(userData.username);
+    if (checkUsername) {
+        throw new HttpError(403, "Username already in use");
+    }
+
+    // Remove confirmPassword before saving
+    const { confirmPassword, ...userToSave } = userData;
+
+    // Hash password
+    userToSave.password = await bcryptjs.hash(userToSave.password, 10);
+
+    // Save user
+    const newUser = await userRepository.createUser(userToSave);
+
+    // Remove password before sending response
+    const { password, ...safeUser } = newUser.toObject();
+
+    return safeUser;
+}
+
 
     async loginUser(loginData: LoginUserDto){
         const user = await userRepository.getUserByEmail(loginData.email);

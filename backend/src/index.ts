@@ -6,11 +6,17 @@ import { connectDB } from './database/mongodb';
 import bodyParser from 'body-parser';
 import authRoutes from './routes/auth.routes';
 import adminUserRoutes from './routes/admin/user.route';
+import cors from 'cors';
 
 dotenv.config();
 console.log(process.env.PORT);
 
 const app: Application = express();
+
+let corsOptions = {
+    origin: ['http://localhost:3000']
+}
+app.use(cors(corsOptions));
 
 app.use(bodyParser.json());
 app.use('/api/auth', authRoutes);
