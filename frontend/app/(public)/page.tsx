@@ -1,241 +1,84 @@
-"use client";
+"use client"; 
 
-import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+// import { useRouter } from "next/router";
 
-export default function HomePage() {
-  const [feed, setFeed] = useState<"home" | "friends">("home");
-
-  const homePosts = [
-    {
-      id: 1,
-      profileImg: "/image/h1.png",
-      user: "Ram Sharma",
-      time: "2h",
-      text: "Enjoy the view from the chautari",
-      img: "/image/p1.webp",
-    },
-    {
-      id: 2,
-      profileImg: "/image/h2.jpg",
-      user: "Dilip Pandey",
-      time: "2h",
-      text: "How’s this for a view 😏",
-      img: "/image/p2.jpeg",
-    },
-    {
-      id: 3,
-      profileImg: "/image/h3.jpg",
-      user: "Hari Khadka",
-      time: "2h",
-      text: "What a scene 😏",
-      img: "/image/p3.jpg",
-    },
-    {
-      id: 4,
-      profileImg: "/image/h4.jpg",
-      user: "Shyam Bahadur",
-      time: "2h",
-      text: "How are you guys????",
-    },
-  ];
-
-
-
-const friendsPosts = [
-  {
-    id: 1,
-    profileImg: "/image/h1.png",
-    user: "Anita Thapa",
-    time: "1h",
-    text: "Loving the sunny weather today! 🌞",
-  },
-  {
-    id: 2,
-    profileImg: "/image/h2.jpg",
-    user: "Binod Koirala",
-    time: "2h",
-    text: "Just finished a great hike in the hills 🏞️",
-    img: "/image/p2.jpeg",
-  },
-  {
-    id: 3,
-    profileImg: "/image/h3.jpg",
-    user: "Suman Gurung",
-    time: "3h",
-    text: "Coffee and good vibes ☕😊",
-    img: "/image/p3.jpg",
-  },
-  {
-    id: 4,
-    profileImg: "/image/h4.jpg",
-    user: "Kiran Shrestha",
-    time: "4h",
-    text: "Weekend adventures are the best! 🎉",
-    img: "/image/p2.jpeg",
-  },
-];
-
-  const postsToShow = feed === "home" ? homePosts : friendsPosts;
-
+export default function LandingPage() {
+  // const router = useRouter();
   return (
-    <div className="flex h-[calc(100vh-64px)] gap-4 p-4">
+    <section className="relative w-full h-screen overflow-hidden">
 
-      <aside className="w-1/4 flex-shrink-0 flex flex-col gap-4 overflow-hidden">
-        <div className="flex flex-col">
-          <h2 className="font-bold mb-2">Chautari</h2>
-          <ul className="space-y-2 max-h-48 overflow-y-auto scrollbar-hidden">
-            <li className="bg-gray-200 rounded-md p-2 cursor-pointer hover:bg-gray-300">c/Chautari_Guff</li>
-            <li className="bg-gray-200 rounded-md p-2 cursor-pointer hover:bg-gray-300">c/Ramailo_Kura</li>
-            <li className="bg-gray-200 rounded-md p-2 cursor-pointer hover:bg-gray-300">c/Vibes</li>
-            <li className="bg-gray-200 rounded-md p-2 cursor-pointer hover:bg-gray-300">c/Meme_dokan</li>
-            <li className="bg-gray-200 rounded-md p-2 cursor-pointer hover:bg-gray-300">c/Sports</li>
-          </ul>
-        </div>
+      <Image
+        src="/image/back3.jpeg"
+        alt="Background"
+        fill
+        priority
+        className="object-cover"
+      />
 
+      {/* Overlay text ko lagi */}
+      <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-transparent" />
 
+      <div className="absolute top-6 left-6 z-20 flex items-center gap-3">
+        <Image
+          src="/image/green_half_logo.png"
+          alt="ChautariKuraKani Logo"
+          width={42}
+          height={42}
+          priority
+        />
+        <span className="text-gray-300 text-xl font-semibold tracking-wide">
+          ChautariKuraKani
+        </span>
+      </div>
 
+      {/* Content */}
+      <div className="relative z-10 max-w-7xl mx-auto h-full px-6 flex items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center w-full">
 
+          <div className="text-white">
+            <h1 className="text-5xl font-bold leading-tight">
+              Connect & Share <br />
+              <span className="text-green-400">Instantly</span>
+            </h1>
 
-        <div className="flex flex-col">
-          <h2 className="font-bold mb-2">Messages</h2>
-          <ul className="space-y-2 max-h-48 overflow-y-auto scrollbar-hidden">
+            <p className="mt-6 text-lg text-gray-200 max-w-xl">
+              ChautariKuraKani is your digital chautari — connect, chat,
+              and share moments with people who matter.
+            </p>
 
-            <li className="flex items-center gap-2 bg-gray-200 rounded-md p-2 hover:bg-gray-300">
-              <div className="w-8 h-8 rounded-full overflow-hidden">
-                <img src="/image/h1.png" alt="Hari Lama" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">Hari Lama</p>
-                <p className="text-xs text-gray-600">Paisa firta kaile dine?</p>
-              </div>
-            </li>
+            <div className="mt-8 flex gap-4">
+              <Link href="/login">
+              <button className="px-6 py-3 bg-green-500 rounded-xl font-semibold hover:bg-green-600 transition">
+                Get Started
+              </button>
+              </Link>
+              
 
-            <li className="flex items-center gap-2 bg-gray-200 rounded-md p-2 hover:bg-gray-300">
-              <div className="w-8 h-8 rounded-full overflow-hidden">
-                <img src="/image/h2.jpg" alt="Ram Sharma" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">Ram Sharma</p>
-                <p className="text-xs text-gray-600">K chaa sathi</p>
-              </div>
-            </li>
-
-            <li className="flex items-center gap-2 bg-gray-200 rounded-md p-2 hover:bg-gray-300">
-              <div className="w-8 h-8 rounded-full overflow-hidden">
-                <img src="/image/h3.jpg" alt="Ram Sharma" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">Shuyam Bahadur</p>
-                <p className="text-xs text-gray-600">Jam Chiya khana</p>
-              </div>
-            </li>
-
-            <li className="flex items-center gap-2 bg-gray-200 rounded-md p-2 hover:bg-gray-300">
-              <div className="w-8 h-8 rounded-full overflow-hidden">
-                <img src="/image/h4.jpg" alt="Ram Sharma" className="w-full h-full object-cover" />
-              </div>
-              <div>
-                <p className="font-semibold text-sm">Kancha Khadka</p>
-                <p className="text-xs text-gray-600">Haina Hola</p>
-              </div>
-            </li>
-          </ul>
-        </div>
-      </aside>
-
-
-
-
-
-
-
-
-
-
-      <main className="flex-1 h-full flex flex-col overflow-hidden">
-        <div className="flex justify-center gap-4 mb-4">
-          <button
-            className={`px-4 py-2 rounded-md font-semibold ${feed === "home" ? " text-green-600 underline" : " text-gray-700"}`}
-            onClick={() => setFeed("home")}
-          >
-            Home Feed
-          </button>
-
-          <button
-            className={`px-4 py-2 rounded-md font-semibold ${feed === "friends" ? " text-green-600 underline" : " text-gray-500"}`}
-            onClick={() => setFeed("friends")}
-          >
-            Friends Feed
-          </button>
-        </div>
-
-
-
-
-        <div className="flex-1 overflow-y-auto space-y-4 scrollbar-hidden">
-          {postsToShow.map((post) => (
-            <div key={post.id} className="bg-white rounded-md shadow p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full overflow-hidden">
-                    <img src={post.profileImg} alt={post.user} className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <p className="font-semibold">{post.user}</p>
-                    <p className="text-xs text-gray-500">{post.time}</p>
-                  </div>
-                </div>
-                <span className="cursor-pointer">...</span>
-              </div>
-              <p className="mb-2">{post.text}</p>
-
-              {post.img && <img src={post.img} alt="Post image" className="w-full rounded-md" />}
-
-              <div className="flex gap-4 mt-2 text-gray-500">
-                <button>👍</button>
-                <button>👎</button>
-                <button>💬</button>
-              </div>
+              <button className="px-6 py-3 border border-white/60 rounded-xl hover:bg-white/10 transition">
+                Learn More
+              </button>
             </div>
-          ))}
-        </div>
-      </main>
-
-
-
-
-
-
-      <aside className="w-1/4 space-y-4 flex-shrink-0 flex flex-col overflow-hidden">
-        <div className="flex items-center gap-2 bg-gray-300 rounded-md p-2">
-          <div className="w-10 h-10 rounded-full overflow-hidden">
-            <img src="/image/person.jpg" alt="Aryan Jung Chhetri" className="w-full h-full object-cover" />
           </div>
-          <p className="font-semibold">Aryan Jung Chhetri</p>
-        </div>
 
-
-
-
-
-
-
-        <div className="bg-gray-100 rounded-md p-2 flex flex-col h-[90%]">
-          <div className="bg-green-500 text-white px-2 py-1 rounded-t-md font-semibold">AI Chat Bot</div>
-          <div className="p-2 space-y-2 flex-1 overflow-y-auto scrollbar-hidden">
-            <div className="bg-white rounded-md p-1">Heyyyyyyyyyyyyyyyyy</div>
-            <div className="bg-white rounded-md p-1">Hi!! How can I help you?</div>
-          </div>
-          <div className="flex mt-2">
-            <input
-              type="text"
-              placeholder="Ask me anything...."
-              className="flex-1 border border-gray-300 rounded-l-md px-2 outline-none"
+          <div className="flex w-full">
+            <Image
+              src="/image/peo_bg.png"
+              alt="People Illustration"
+              width={900}
+              height={900}
+              className="ml-auto max-w-none w-[700px] lg:w-[850px] object-contain drop-shadow-2xl"
             />
-            <button className="bg-black text-white px-2 rounded-r-md">➤</button>
           </div>
+
+          {/* <div className="absolute bottom-65 right-20 z-20 flex items-center gap-3">
+            <span className="text-gray-300 text-4xl font-bold tracking-wide">
+              Chautarimah Sabai Kura
+            </span>
+          </div> */}
         </div>
-      </aside>
-    </div>
+      </div>
+    </section>
   );
 }
