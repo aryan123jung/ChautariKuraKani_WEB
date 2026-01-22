@@ -42,7 +42,6 @@ export class AuthController {
             )
         }
     }
-
     async getUserById(req: Request, res: Response){
         try{
             const userId = req.user?._id;
@@ -76,9 +75,18 @@ export class AuthController {
                     { success: false, message: z.prettifyError(parsedData.error) }
                 )
             }
-            if(req.file){ 
-                parsedData.data.profileUrl = `/uploads/${req.file.filename}`;
-                parsedData.data.coverUrl = `/uploads/${req.file.filename}`;
+            // if(req.file){ 
+            //     parsedData.data.profileUrl = `/uploads/${req.file.filename}`;
+            //     parsedData.data.coverUrl = `/uploads/${req.file.filename}`;
+            // }
+            const files = req.files as any;
+
+            if (files?.profileUrl?.[0]) {
+                parsedData.data.profileUrl = `/uploads/${files.profileUrl[0].filename}`;
+            }
+
+            if (files?.coverUrl?.[0]) {
+                parsedData.data.coverUrl = `/uploads/${files.coverUrl[0].filename}`;
             }
             const updatedUser = await userService.updateUser(userId, parsedData.data);
             return res.status(200).json(
