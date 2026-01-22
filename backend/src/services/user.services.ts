@@ -1,4 +1,4 @@
-import { CreateUserDto, LoginUserDto } from "../dtos/user.dtos";
+import { CreateUserDto, LoginUserDto, UpdateUserDto } from "../dtos/user.dtos";
 import { HttpError } from "../errors/http-error";
 import bcryptjs from "bcryptjs";
 import { UserRepository } from "../repositories/user.repository";
@@ -23,30 +23,30 @@ export class UserService{
     //     return newUser;
     // }
     async registerUser(userData: CreateUserDto) {
-    const checkEmail = await userRepository.getUserByEmail(userData.email);
-    if (checkEmail) {
-        throw new HttpError(409, "Email already in use");
-    }
+        const checkEmail = await userRepository.getUserByEmail(userData.email);
+        if (checkEmail) {
+            throw new HttpError(409, "Email already in use");
+        }
 
-    const checkUsername = await userRepository.getUserByUsername(userData.username);
-    if (checkUsername) {
-        throw new HttpError(403, "Username already in use");
-    }
+        const checkUsername = await userRepository.getUserByUsername(userData.username);
+        if (checkUsername) {
+            throw new HttpError(403, "Username already in use");
+        }
 
-    // Remove confirmPassword before saving
-    const { confirmPassword, ...userToSave } = userData;
+        // Remove confirmPassword before saving
+        const { confirmPassword, ...userToSave } = userData;
 
-    // Hash password
-    userToSave.password = await bcryptjs.hash(userToSave.password, 10);
+        // Hash password
+        userToSave.password = await bcryptjs.hash(userToSave.password, 10);
 
-    // Save user
-    const newUser = await userRepository.createUser(userToSave);
+        // Save user
+        const newUser = await userRepository.createUser(userToSave);
 
-    // Remove password before sending response
-    const { password, ...safeUser } = newUser.toObject();
+        // Remove password before sending response
+        const { password, ...safeUser } = newUser.toObject();
 
     return safeUser;
-}
+    }
 
 
     async loginUser(loginData: LoginUserDto){
@@ -65,5 +65,38 @@ export class UserService{
         }
         const token = jwt.sign(payload,JWT_SECRET,{expiresIn: '30d'})
         return { token, user}
+    }
+
+    async getUserById(userId: string){
+        const user = await userRepository.getUserById(userId);
+        if(!user){
+            throw new HttpError(404,"User not found")
+        }
+        return user;
+    }
+
+    async updateUser(userId: string, data: UpdateUserDto) { 
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpError(404, "User not found");
+        }
+        if(user.email !== data.email){
+            const checkEmail = await userRepository.getUserByEmail(data.email!);
+            if(checkEmail){
+                throw new HttpError(409, "Email already in use");
+            }
+        }
+        if(user.username !== data.username){
+            const checkUsername = await userRepository.getUserByUsername(data.username!);
+            if(checkUsername){
+                throw new HttpError(403, "Username already in use");
+            }
+        }
+        if(data.password){
+            const hashedPassword = await bcryptjs.hash(data.password, 10);
+            data.password = hashedPassword;
+        }
+        const updatedUser = await userRepository.updateUser(userId, data);
+        return updatedUser;
     }
 }

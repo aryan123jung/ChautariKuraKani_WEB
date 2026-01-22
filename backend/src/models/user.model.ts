@@ -11,7 +11,9 @@ const userMongoSchema: Schema = new Schema(
         username: {type: String, required: true, unique: true},
         password: {type:String, required:true},
         // confirmPassword: {type:String, required:true},
-        role: {type: String, enum: ['user','admin'],default:'user'}
+        role: {type: String, enum: ['user','admin'],default:'user'},
+        profileUrl: {type: String, required: false},
+        coverUrl: {type: String, required: false}
     },
     {
         timestamps: true,
