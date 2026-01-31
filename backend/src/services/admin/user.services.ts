@@ -19,7 +19,7 @@ export class AdminUserService{
                 const newUser = await userRepository.createUser(userData);
                 return newUser;
     }
-    async getOneUser(userId: string){
+    async getUserById(userId: string){
         const user = await userRepository.getUserById(userId);
         if(!user){ 
             throw new HttpError(404,"User not found");
