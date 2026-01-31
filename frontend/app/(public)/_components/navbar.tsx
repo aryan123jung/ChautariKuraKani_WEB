@@ -3,7 +3,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { clearAuthCookies } from "@/lib/cookie";
 
 export default function NavBar() {
   const [open, setOpen] = useState(false);
@@ -19,6 +20,16 @@ export default function NavBar() {
     pathname === path
       ? "bg-[#76C05D] text-white underline font-semibold px-3 py-2 rounded-md block"
       : "text-black hover:text-green-600 hover:underline hover:decoration-black transition-colors block px-3 py-2 rounded-md";
+
+
+  const router = useRouter();
+
+const handleLogout = async () => {
+  await clearAuthCookies();   // server action
+  router.push("/login");      // or "/"
+  router.refresh();           // re-render server components
+};
+
 
   return (
     <header className="flex items-center justify-between bg-[#76C05D] p-3">
@@ -117,7 +128,7 @@ export default function NavBar() {
           </ul>
         </div>
         <div className="p-4 border-t border-green-700">
-          <button className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-md transition-colors">
+          <button onClick={handleLogout} className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-md transition-colors">
             Logout
           </button>
         </div>
