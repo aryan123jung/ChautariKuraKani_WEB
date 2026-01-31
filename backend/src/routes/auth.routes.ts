@@ -9,7 +9,8 @@ const router = Router();
 router.post("/register", authController.createUser)
 router.post("/login", authController.loginUser)
 
-router.get("/whoami", authorizedMiddleware,authController.getUserById)
+router.get("/whoami", authorizedMiddleware, authController.getUserById);
+router.get("/user/:id", authorizedMiddleware, authController.getCurrentUser);
 
 router.put(
     "/update-profile",
@@ -20,6 +21,7 @@ router.put(
         { name: "coverUrl", maxCount: 1 }
     ]),
     authController.updateUser
-)
+);
+
 
 export default router;

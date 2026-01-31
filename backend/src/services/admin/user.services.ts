@@ -49,4 +49,9 @@ export class AdminUserService{
         }
         return updatedUser;
     }
+
+    async getAllUsers(){
+        const users = await userRepository.getAllusers();
+        return users;
+    }
 }

@@ -5,6 +5,7 @@ import { AdminUserService } from "../../services/admin/user.services";
 
 let adminUserService = new AdminUserService();
 export class AdminUserController{
+
     async createUser(req: Request, res: Response){
         try{
         const parsedData = CreateUserDto.safeParse(req.body);
@@ -17,12 +18,13 @@ export class AdminUserController{
         return res.status(201).json(
             {success: true, message: 'Register Successful', data: newUser}
         )
-    }catch(error: Error | any){
-        return res.status(error.status || 500).json(
-            {success: false, message: error.message || "Internal Server Error"}
-        )
+        }catch(error: Error | any){
+            return res.status(error.status || 500).json(
+                {success: false, message: error.message || "Internal Server Error"}
+            )
+        }
     }
-    }
+
     async getOneUser(req: Request, res: Response){
         try{
             const userId =  req.params.id; 
@@ -36,4 +38,18 @@ export class AdminUserController{
             )
         }
     }
+
+    async getAllUser(req:Request, res:Response){
+        try{
+            const users = await adminUserService.getAllUsers();
+            return res.status(200).json(
+                {success: true,data: users, message: "All users Retrieved"}
+            );
+        }catch(error: Error | any){
+            return res.status(error.statusCode ?? 500).json(
+                {success: false, message: error.message || "Internal Server Error"}
+            )
+        }
+    }
+
 }
