@@ -201,91 +201,40 @@
 
 
 
+import { getUserData } from "@/lib/cookie";
+import ProfileCover from "./_components/ProfileCover";
+import ProfileAvatar from "./_components/ProfileAvatar";
+import ProfileDetails from "./_components/ProfileDetails";
+import ProfileStats from "./_components/ProfileStats";
 
-"use server";
-import Image from "next/image";
-import { handleWhoAmI } from "@/lib/actions/auth-action";
-// import UpdateUserForm from "./_components/UpdateUserForm";
+const DEFAULT_COVER = "/images/default-cover.jpg";
+const DEFAULT_AVATAR = "/images/default-avatar.png";
 
 export default async function ProfilePage() {
-  const result = await handleWhoAmI();
+  const user = await getUserData();
 
-  if (!result.success) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-500">Failed to load profile</p>
+      <div className="min-h-[60vh] flex items-center justify-center text-gray-500">
+        User not found
       </div>
     );
   }
 
-  const user = result.data;
-
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+    <div className="max-w-5xl mx-auto">
+      {/* Cover */}
+      <ProfileCover coverUrl={user.coverUrl ?? DEFAULT_COVER} />
 
-        {/* COVER */}
-        <div className="relative h-40 bg-gray-300">
-          {user.coverUrl && (
-            <Image
-              src={`${process.env.NEXT_PUBLIC_API_URL}/uploads/cover/${user.coverUrl}`}
-              alt="Cover"
-              fill
-              className="object-cover"
-            />
-          )}
-        </div>
+      <div className="relative px-6">
+        {/* Avatar */}
+        <ProfileAvatar profileUrl={user.profileUrl ?? DEFAULT_AVATAR} />
 
-        {/* PROFILE HEADER */}
-        <div className="relative px-6 pb-6">
-          <div className="-mt-12 flex items-center gap-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white bg-white">
-              <Image
-                src={
-                  user.profileUrl
-                    ? `${process.env.NEXT_PUBLIC_API_URL}/uploads/${user.profileUrl}`
-                    : "/image/person.jpg"
-                }
-                alt="Profile"
-                width={96}
-                height={96}
-                className="object-cover w-full h-full"
-              />
-            </div>
+        {/* Details */}
+        <ProfileDetails user={user} />
 
-            <div>
-              <h1 className="text-2xl font-bold">
-                {user.firstName} {user.lastName}
-              </h1>
-              <p className="text-gray-500">@{user.username}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* INFO */}
-        <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h2 className="font-semibold text-gray-700 mb-2">
-              Personal Info
-            </h2>
-            <p><span className="font-medium">Email:</span> {user.email}</p>
-            <p><span className="font-medium">Role:</span> {user.role}</p>
-          </div>
-
-          <div>
-            <h2 className="font-semibold text-gray-700 mb-2">
-              Stats
-            </h2>
-            <p>Posts: 0</p>
-            <p>Friends: 0</p>
-            <p>Communities: 0</p>
-          </div>
-        </div>
-
-        {/* UPDATE FORM */}
-        {/* <div className="border-t p-6">
-          <UpdateUserForm user={user} />
-        </div> */}
+        {/* Stats */}
+        <ProfileStats user={user} />
       </div>
     </div>
   );

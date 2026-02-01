@@ -41,7 +41,7 @@
 
 import { cookies } from "next/headers";
 
-interface UserData {
+export interface UserData {
     id: string;
     firstName:  string; 
     lastName: string;
