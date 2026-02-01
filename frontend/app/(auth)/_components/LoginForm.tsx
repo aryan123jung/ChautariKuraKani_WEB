@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, LoginData } from "../schema";
-import { startTransition, useTransition } from "react";
+import { startTransition, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { handleLogin } from "@/lib/actions/auth-action";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -20,12 +21,35 @@ export default function LoginForm() {
         }
     );
     const [isPending, startTransition] = useTransition()
+    const [error, setError] = useState<string | null>(null);
 
 
     const Submit = async (values: LoginData) => {
+      setError(null);
         startTransition(async()=>{
-            await new Promise((resolve)=> setTimeout(resolve, 2000));
-            router.push("/home");
+          try{
+            // await new Promise((resolve)=> setTimeout(resolve, 2000));
+            // router.push("/home");
+            const response = await handleLogin(values);
+                if (!response.success) {
+                    throw new Error(response.message);
+                }
+                if (response.success) {
+                    if (response.data?.role == 'admin') {
+                        return router.replace("/admin");
+                    }
+                    if (response.data?.role === 'user') {
+                        return router.replace("/user/home");
+                    }
+                    return router.replace("/");
+                } else {
+                    setError('Login failed');
+                }
+
+          } catch(err: Error | any){
+            setError('Login Failed. Please try again.')
+          }
+            
         })
     };
 
