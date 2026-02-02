@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import { error } from "console";
 import { useRouter } from "next/navigation";
 import { handleRegister } from "@/lib/actions/auth-action";
+import { toast } from "react-toastify";
 
 export default function RegisterForm() {
 
@@ -30,6 +31,7 @@ export default function RegisterForm() {
       if(!response.success){
         throw new Error(response.message);
       }
+      toast.success("Registration successful!");
       startTransition(() => router.push("/login"))
     }catch(err: any){
       setError(err.message || "Registration Failed")

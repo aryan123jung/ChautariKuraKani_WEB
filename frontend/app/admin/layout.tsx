@@ -1,11 +1,3 @@
-// export default function Layout({children}: {children: React.ReactNode}) {
-//     return (
-//         <section>
-//             {children}
-//         </section>
-//     );
-// }
-
 "use client";
 
 import AdminSidebar from "./_components/AdminSidebar";

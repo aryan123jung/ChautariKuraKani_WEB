@@ -7,6 +7,7 @@ import { loginSchema, LoginData } from "../schema";
 import { startTransition, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { handleLogin } from "@/lib/actions/auth-action";
+import { toast } from "react-toastify";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -28,22 +29,26 @@ export default function LoginForm() {
       setError(null);
         startTransition(async()=>{
           try{
-            // await new Promise((resolve)=> setTimeout(resolve, 2000));
-            // router.push("/home");
             const response = await handleLogin(values);
                 if (!response.success) {
-                    throw new Error(response.message);
+                    // throw new Error(response.message);
+                    toast.error(response.message || "Login failed. Please check your credentials.");
+                    setError(response.message || "Login failed. Please check your credentials.");
+                    return;
                 }
                 if (response.success) {
                     if (response.data?.role == 'admin') {
+                        toast.success("Login successful!");
                         return router.replace("/admin");
                     }
                     if (response.data?.role === 'user') {
+                        toast.success("Login successful!");
                         return router.replace("/user/home");
                     }
                     return router.replace("/");
                 } else {
-                    setError('Login failed');
+                    // setError('Login failed');
+                    toast.error('Login failed. Please try again.');
                 }
 
           } catch(err: Error | any){
