@@ -247,6 +247,7 @@ export default function EditProfileForm({
       formData.append("lastName", parsed.data.lastName);
       formData.append("username", parsed.data.username);
       formData.append("email", parsed.data.email);
+      formData.append("role", user.role); // add this line
 
       if (parsed.data.profileUrl) formData.append("profileUrl", parsed.data.profileUrl);
       if (parsed.data.coverUrl) formData.append("coverUrl", parsed.data.coverUrl);

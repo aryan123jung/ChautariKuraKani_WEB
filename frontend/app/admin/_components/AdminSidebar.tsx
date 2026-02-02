@@ -45,6 +45,10 @@ export default function AdminSidebar() {
         <Link href="/admin/settings" className={`block px-4 py-2 rounded ${linkClass("/admin/settings")}`}>
           Settings
         </Link>
+
+        <Link href="/admin/profi;e" className={`block px-4 py-2 rounded ${linkClass("/admin/profile")}`}>
+          My Profile
+        </Link>
       </nav>
 
       <div className="p-4 border-t">
