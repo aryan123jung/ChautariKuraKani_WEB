@@ -1,19 +1,3 @@
-// "use client";
-
-// import NavBar from "../user/_components/navbar";
-
-// export default function Layout({children}: {children: React.ReactNode}) {
-    
-
-
-//     return (
-//         <section>
-//         <NavBar/>   
-//             {children}
-//         </section>
-//     );
-// }
-
 "use client";
 
 import NavBar from "../user/_components/navbar";
@@ -37,7 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     fetchUser();
   }, []);
 
-  if (!user) return null; // show loader if you want
+  if (!user) return null; // show loader if i want
 
   return (
     <section>

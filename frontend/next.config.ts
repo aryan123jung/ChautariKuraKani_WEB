@@ -13,6 +13,11 @@ const backendURL =
 const IsDEV = backendURL.startsWith("http://localhost");
 
 const config: NextConfig = {
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "5mb",
+    },
+  },
   images: {
     dangerouslyAllowLocalIP: IsDEV,
     remotePatterns: [

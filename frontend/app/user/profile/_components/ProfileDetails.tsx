@@ -1,8 +1,12 @@
 "use client";
 
-import Link from "next/link";
-
-export default function ProfileDetails({ user }: { user: any }) {
+export default function ProfileDetails({
+  user,
+  onEdit,
+}: {
+  user: any;
+  onEdit: () => void;
+}) {
   return (
     <div className="mt-20 flex flex-col md:flex-row md:justify-between md:items-center">
       <div>
@@ -13,12 +17,12 @@ export default function ProfileDetails({ user }: { user: any }) {
         <p className="text-sm text-gray-600">{user.email}</p>
       </div>
 
-      <Link
-        href="/user/profile/edit"
+      <button
+        onClick={onEdit}
         className="mt-4 md:mt-0 bg-blue-600 text-white px-5 py-2 rounded-md hover:bg-blue-700"
       >
         Edit Profile
-      </Link>
+      </button>
     </div>
   );
 }
