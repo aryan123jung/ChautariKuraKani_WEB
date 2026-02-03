@@ -18,3 +18,13 @@ export default function ProfileAvatar({
     </div>
   );
 }
+
+//profile_icon_214017.ico
+
+//const profilePreview = form.profileUrl
+    // ? form.profileUrl instanceof File
+    //   ? URL.createObjectURL(form.profileUrl)
+    //   : `${backendUrl}/uploads/profile/${form.profileUrl}`
+    // : user.profileUrl
+    // ? `${backendUrl}/uploads/profile/${user.profileUrl}`
+    // : "/image/profile_icon_214017.ico/";
