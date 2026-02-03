@@ -1,32 +1,8 @@
-import express, { Application } from 'express';
-import { PORT } from './configs';
-import dotenv from 'dotenv';
-import { connect } from 'http2';
-import { connectDB } from './database/mongodb';
-import bodyParser from 'body-parser';
-import authRoutes from './routes/auth.routes';
-import adminUserRoutes from './routes/admin/user.route';
-import cors from 'cors';
-import path from "path";
+import app from "./app";
+import { PORT } from "./configs";
+import { connectDB } from "./database/mongodb";
 
-dotenv.config();
-console.log(process.env.PORT);
-
-const app: Application = express();
-
-let corsOptions = {
-    origin: ['http://localhost:3000']
-}
-
-app.use("/uploads",express.static(path.join(__dirname,'../uploads')));
-
-app.use(cors(corsOptions));
-app.use(bodyParser.json());
-app.use('/api/auth', authRoutes);
-app.use('/api/admin/users',adminUserRoutes);
-
-
-
+//server part
 async function startServer(){
     await connectDB();
 

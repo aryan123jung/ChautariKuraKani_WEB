@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import { JWT_SECRET } from "../configs";
 import path from "path";
 import fs from "fs";
+import { sendEmail } from "../configs/email";
 
 
 let userRepository = new UserRepository();
@@ -199,4 +200,20 @@ export class UserService {
     //     return users;
     //   }
 
+    async sendResetPasswordEmail(email?: string) {
+        const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+        if (!email) {
+            throw new HttpError(400, "Email is required");
+        }
+        const user = await userRepository.getUserByEmail(email);
+        if (!user) {
+            throw new HttpError(404, "User not found");
+        }
+        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1h' }); // 1 hour expiry
+        const resetLink = `${CLIENT_URL}/reset-password?token=${token}`;
+        const html = `<p>Click <a href="${resetLink}">here</a> to reset your password. This link will expire in 1 hour.</p>`;
+        await sendEmail(user.email, "Password Reset", html);
+        return user;
+    }
 }
+
