@@ -11,6 +11,7 @@ export const API = {
         USER:{
             CREATE: '/api/admin/users',
             ALL: "/api/admin/users", 
+            DELETE: (userId: string) => `/api/admin/users/${userId}`
         }
     }
 }

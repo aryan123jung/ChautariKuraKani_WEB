@@ -31,7 +31,12 @@
 //     return [];
 //   }
 // };
-import { createUser, fetchUsers } from "@/lib/api/admin/user";
+
+
+"use server";
+
+import { createUser, deleteUser, fetchUsers } from "@/lib/api/admin/user";
+import { revalidatePath } from "next/cache";
 
 export const handleCreateUser = async (formData: FormData) => {
   try {
@@ -63,3 +68,23 @@ export const getUsers = async () => {
     return [];
   }
 };
+
+
+export const handleDeleteUser = async (id: string) => {
+    try {
+        const response = await deleteUser(id)
+        if (response.success) {
+            revalidatePath('/admin/users');
+            return {
+                success: true,
+                message: 'Delete user successful'
+            }
+        }
+        return {
+            success: false,
+            message: response.message || 'Delete user failed'
+        }
+    } catch (error: Error | any) {
+        return { success: false, message: error.message || 'Delete user action failed' }
+    }
+  }

@@ -2,14 +2,14 @@
 import axios from "../axios";
 import { API } from "../endpoints";
 
-export interface CreateUserPayload {
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+// export interface CreateUserPayload {
+//   firstName: string;
+//   lastName: string;
+//   username: string;
+//   email: string;
+//   password: string;
+//   confirmPassword: string;
+// }
 
 export const fetchUsers = async () => {
   const response = await axios.get(API.ADMIN.USER.ALL);
@@ -49,3 +49,15 @@ export const createUser = async (formData: FormData) => {
     );
   }
 };
+
+export const deleteUser = async (id: string) => {
+    try {
+        const response = await axios.delete(
+            API.ADMIN.USER.DELETE(id)
+        );
+        return response.data;
+    } catch (error: Error | any) {
+        throw new Error(error.response?.data?.message
+            || error.message || 'Delete user failed');
+    }
+}
