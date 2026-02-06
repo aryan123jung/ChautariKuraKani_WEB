@@ -47,6 +47,7 @@
 "use client";
 
 import Link from "next/link";
+import {User} from "lucide-react";
 
 type UserData = {
   firstName: string;
@@ -76,7 +77,7 @@ export default function RightSidebar({ user }: { user: UserData }) {
           transition-colors duration-200
         "
       > */}
-      <Link
+      {/* <Link
         href="/user/profile"
         className="
           flex items-center gap-2
@@ -100,7 +101,43 @@ export default function RightSidebar({ user }: { user: UserData }) {
         <p className="font-semibold">
           {user.firstName} {user.lastName}
         </p>
-      </Link>
+      </Link> */}
+
+      <Link
+  href="/user/profile"
+  className="
+    flex items-center gap-3
+    rounded-lg
+    p-2
+    border border-gray-200
+    bg-white
+    hover:border-green-500
+    hover:bg-green-50
+    hover:shadow-sm
+    transition-all duration-200
+  "
+>
+  <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-200">
+    {profileImage ? (
+      <img
+        src={profileImage}
+        alt={`${user.firstName} ${user.lastName}`}
+        className="w-full h-full object-cover"
+      />
+    ) : (
+      <User className="w-5 h-5 text-gray-500" />
+    )}
+  </div>
+
+  <div className="flex flex-col leading-tight">
+    <p className="font-semibold text-sm text-gray-800">
+      {user.firstName} {user.lastName}
+    </p>
+    <span className="text-xs text-gray-500">View profile</span>
+  </div>
+</Link>
+
+
 
 
       <div className="bg-gray-100 rounded-md p-2 flex flex-col h-[90%]">

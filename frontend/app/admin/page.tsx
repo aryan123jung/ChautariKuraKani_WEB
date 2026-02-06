@@ -16,6 +16,7 @@ export type AdminUser = {
   lastName: string;
   email: string;
   username: string;
+  profileUrl?: string;
   role: "user" | "admin";
 };
 

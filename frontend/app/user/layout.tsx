@@ -34,7 +34,7 @@
 
 import { useEffect, useState } from "react";
 import { getUserData } from "@/lib/cookie";
-import NavBar from "./_components/NavBar";
+import Navbar from "./_components/navbar";
 
 type UserData = {
   firstName: string;
@@ -57,7 +57,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <section>
-      <NavBar user={user} />
+      <Navbar user={user} />
       {children}
     </section>
   );

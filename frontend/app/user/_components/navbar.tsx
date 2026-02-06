@@ -10,7 +10,7 @@ type UserData = {
   profileUrl?: string;
 };
 
-export default function NavBar({ user }: { user: UserData }) {
+export default function Navbar({ user }: { user: UserData }) {
   const [open, setOpen] = useState(false);
 
   return (
