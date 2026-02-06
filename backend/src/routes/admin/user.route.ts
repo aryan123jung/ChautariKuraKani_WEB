@@ -48,7 +48,15 @@ router.get("/test", (req, res) => {
 
 
 
-router.post("/", adminUserController.createUser);
+// router.post("/", adminUserController.createUser);
+router.post(
+  "/",
+  uploads.fields([
+    { name: "profileUrl", maxCount: 1 },
+    { name: "coverUrl", maxCount: 1 }
+  ]),
+  adminUserController.createUser
+);
 
 router.get("/", adminUserController.getAllUser);
 
