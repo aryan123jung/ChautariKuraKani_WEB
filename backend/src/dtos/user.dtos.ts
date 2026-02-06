@@ -10,7 +10,8 @@ export const CreateUserDto = UserSchema.pick(
         password: true,
         confirmPassword: true,
         profileUrl: true,
-        coverUrl: true
+        coverUrl: true,
+        role: true
     }
 ).refine(
     (data) => data.password === data.confirmPassword,
