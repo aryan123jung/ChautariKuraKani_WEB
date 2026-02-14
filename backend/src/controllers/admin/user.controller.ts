@@ -160,7 +160,8 @@ export class AdminUserController{
             data: userObj,
         });
     } catch (error: any) {
-        return res.status(error.status || 500).json({
+        // return res.status(error.status || 500).json({
+        return res.status(error.statusCode || 500).json({
             success: false,
             message: error.message || "Internal Server Error",
         });
