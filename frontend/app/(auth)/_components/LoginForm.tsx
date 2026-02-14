@@ -129,6 +129,12 @@ export default function LoginForm() {
           </Link>
         </p>
 
+        <p>
+          <Link href="/request-reset-password" className="font-semibold text-[#76C05D] hover:underline">
+          Forget Password?
+          </Link>
+        </p>
+
       </form>
     </div>
   );

@@ -79,6 +79,9 @@ export const getUserData = async (): Promise<UserData | null> => {
     const userData = cookieStore.get('user_data')?.value || null;
     return userData ? JSON.parse(userData) : null;
 }
+
+
+
 export const clearAuthCookies = async () => {
     const cookieStore = await cookies();
     cookieStore.delete('auth_token');

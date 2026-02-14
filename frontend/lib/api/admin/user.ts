@@ -16,22 +16,24 @@ export const fetchUsers = async () => {
   return response.data.data;
 };
 
-// export const createUser = async (userData: CreateUserPayload) => {
-//   try {
-//     const response = await axios.post(
-//       API.ADMIN.USER.CREATE,
-//       userData
-//     );
+export const fetchOneUser = async (id: string) => {
+  try {
+    const response = await axios.get(
+      API.ADMIN.USER.GET_ONE_User(id)
+    );
 
-//     return response.data;
-//   } catch (error: any) {
-//     throw new Error(
-//       error.response?.data?.message ||
-//         error.message ||
-//         "Create user failed"
-//     );
-//   }
-// };
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Fetch user failed"
+    );
+  }
+};
+
+
+
 export const createUser = async (formData: FormData) => {
   try {
     const response = await axios.post(API.ADMIN.USER.CREATE, formData, {
@@ -61,3 +63,27 @@ export const deleteUser = async (id: string) => {
             || error.message || 'Delete user failed');
     }
 }
+
+
+
+export const updateUser = async (id: string, formData: FormData) => {
+  try {
+    const response = await axios.put(
+      API.ADMIN.USER.UPDATE(id),
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error: any) {
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Update user failed"
+    );
+  }
+};

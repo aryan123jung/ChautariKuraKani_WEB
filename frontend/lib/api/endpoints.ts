@@ -11,7 +11,9 @@ export const API = {
         USER:{
             CREATE: '/api/admin/users',
             ALL: "/api/admin/users", 
-            DELETE: (userId: string) => `/api/admin/users/${userId}`
+            DELETE: (userId: string) => `/api/admin/users/${userId}`,
+            UPDATE: (userId: string) => `/api/admin/users/${userId}`,
+            GET_ONE_User: (userId: string) => `/api/admin/users/${userId}`
         }
     }
 }

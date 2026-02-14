@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "react-toastify";
 import { handleUpdateProfile } from "@/lib/actions/auth-action";
 import { UpdateAdminData, updateAdminSchema } from "../schema";
+import { useRouter } from "next/navigation";
 
 interface AdminEditProfileProps {
   user: any; // admin object from db or cookie
@@ -12,6 +13,8 @@ interface AdminEditProfileProps {
 
 export default function EditAdminProfileForm({ user, onCancel }: AdminEditProfileProps) {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  const router = useRouter();
 
   const [form, setForm] = useState<UpdateAdminData>({
     firstName: user.firstName,
@@ -70,6 +73,7 @@ export default function EditAdminProfileForm({ user, onCancel }: AdminEditProfil
       if (!res.success) throw new Error(res.message);
 
       toast.success("Profile updated successfully");
+      router.refresh();
       onCancel();
     } catch (err: any) {
       toast.error(err.message || "Update failed");
