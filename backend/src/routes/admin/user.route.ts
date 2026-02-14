@@ -70,6 +70,8 @@ router.put("/:id",
     adminUserController.updateUser
 );
 
+router.get("/",adminUserController.getAllUser);
+
 router.delete("/:id", adminUserController.deleteUser);
 
 export default router;

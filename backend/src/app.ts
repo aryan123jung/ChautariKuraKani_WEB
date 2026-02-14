@@ -1,13 +1,11 @@
-import express, { Application } from 'express';
-import { PORT } from './configs';
+import express, { Application,Request,Response } from 'express';
 import dotenv from 'dotenv';
-import { connect } from 'http2';
-import { connectDB } from './database/mongodb';
 import bodyParser from 'body-parser';
 import authRoutes from './routes/auth.routes';
 import adminUserRoutes from './routes/admin/user.route';
 import cors from 'cors';
 import path from "path";
+import { HttpError } from './errors/http-error';
 
 dotenv.config();
 console.log(process.env.PORT);
@@ -26,5 +24,12 @@ app.use(bodyParser.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/users',adminUserRoutes);
 
+
+app.use((err: Error, req: Request, res: Response, next: Function) => {
+    if (err instanceof HttpError) {
+        return res.status(err.statusCode).json({ success: false, message: err.message });
+    }
+    return res.status(500).json({ success: false, message: err.message || "Internal Server Error" });
+});
 
 export default app;
