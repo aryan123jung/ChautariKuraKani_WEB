@@ -18,6 +18,13 @@ router.get(
   postController.getAllPosts
 );
 
+router.put(
+  "/:id",
+  authorizedMiddleware,
+  uploads.single("media"),
+  postController.updateOnePost
+);
+
 router.delete(
   "/:id",
   authorizedMiddleware,

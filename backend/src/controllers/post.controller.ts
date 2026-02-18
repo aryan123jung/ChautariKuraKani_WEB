@@ -59,6 +59,36 @@ export class PostController {
     }
   }
 
+  async updateOnePost(req: Request, res: Response) {
+    try {
+      const postId = req.params.id;
+      const userId = req.user?._id?.toString();
+      if (!userId) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+
+      const uploadedMedia = req.file;
+      if (uploadedMedia) {
+        req.body.mediaUrl = uploadedMedia.filename;
+        req.body.mediaType = uploadedMedia.mimetype.startsWith("video/")
+          ? "video"
+          : "image";
+      }
+
+      const updatedPost = await postService.updatePost(postId, userId, req.body);
+
+      return res.status(200).json({
+        success: true,
+        data: updatedPost,
+        message: "Post updated successfully"
+      });
+    } catch (err: any) {
+      return res
+        .status(err.statusCode || 500)
+        .json({ message: err.message || "Internal Server Error" });
+    }
+  }
+
   async deleteOnePost(req: Request, res: Response) {
     try {
       const postId = req.params.id;

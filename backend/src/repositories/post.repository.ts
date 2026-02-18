@@ -4,6 +4,7 @@ import { IPost, PostModel } from "../models/post.model";
 export interface IPostRepository {
   create(post: IPost): Promise<IPost>;
   findById(id: string): Promise<IPost | null>;
+  update(id: string, data: Partial<IPost>): Promise<IPost | null>;
   findAll({
     page,
     size
@@ -23,6 +24,11 @@ export class PostRepository implements IPostRepository {
 
   async findById(id: string): Promise<IPost | null> {
     return await PostModel.findById(id)
+      .populate("authorId", "firstName lastName email profileImage");
+  }
+
+  async update(id: string, data: Partial<IPost>): Promise<IPost | null> {
+    return await PostModel.findByIdAndUpdate(id, data, { new: true })
       .populate("authorId", "firstName lastName email profileImage");
   }
 

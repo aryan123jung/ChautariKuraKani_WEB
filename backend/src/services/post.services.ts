@@ -1,5 +1,7 @@
 import { HttpError } from "../errors/http-error";
 import { PostRepository } from "../repositories/post.repository";
+import fs from "fs";
+import path from "path";
 
 const postRepo = new PostRepository();
 
@@ -28,6 +30,36 @@ export class PostService {
     };
 
     return { posts, pagination };
+  }
+
+  async updatePost(id: string, userId: string, data: any) {
+    const post = await postRepo.findById(id);
+    if (!post) {
+      throw new HttpError(404, "Post not found");
+    }
+
+    const postAuthorId =
+      typeof post.authorId === "string"
+        ? post.authorId
+        : (post.authorId as any)?._id?.toString?.() || post.authorId.toString();
+
+    if (postAuthorId !== userId) {
+      throw new HttpError(403, "You can only edit your own post");
+    }
+
+    if (data.mediaUrl && post.mediaUrl && post.mediaUrl !== data.mediaUrl) {
+      const oldMediaPath = path.resolve(process.cwd(), "uploads/posts", post.mediaUrl);
+      if (fs.existsSync(oldMediaPath)) {
+        fs.unlinkSync(oldMediaPath);
+      }
+    }
+
+    const updatedPost = await postRepo.update(id, data);
+    if (!updatedPost) {
+      throw new HttpError(404, "Post not found");
+    }
+
+    return updatedPost;
   }
 
   async deletePost(id: string) {
