@@ -56,9 +56,17 @@ export class PostService {
     }
 
     if (data.mediaUrl && post.mediaUrl && post.mediaUrl !== data.mediaUrl) {
-      const oldMediaPath = path.resolve(process.cwd(), "uploads/posts", post.mediaUrl);
-      if (fs.existsSync(oldMediaPath)) {
-        fs.unlinkSync(oldMediaPath);
+      const candidatePaths = [
+        path.resolve(process.cwd(), "uploads/posts", post.mediaUrl), // legacy location
+        path.resolve(process.cwd(), "uploads/posts/images", post.mediaUrl),
+        path.resolve(process.cwd(), "uploads/posts/videos", post.mediaUrl)
+      ];
+
+      for (const oldMediaPath of candidatePaths) {
+        if (fs.existsSync(oldMediaPath)) {
+          fs.unlinkSync(oldMediaPath);
+          break;
+        }
       }
     }
 

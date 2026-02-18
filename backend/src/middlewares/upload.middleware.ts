@@ -60,7 +60,11 @@ const storage = multer.diskStorage({
     }
 
     if (file.fieldname === "media") {
-      folder = "uploads/posts";
+      if (file.mimetype.startsWith("video/")) {
+        folder = "uploads/posts/videos";
+      } else {
+        folder = "uploads/posts/images";
+      }
     }
 
     const uploadPath = path.resolve(process.cwd(), folder);
