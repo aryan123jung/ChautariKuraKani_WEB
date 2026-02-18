@@ -146,8 +146,9 @@ export class AuthController {
 
     async requestPasswordChange(req: Request, res: Response) {
         try {
-            const { email } = req.body;
-            const user = await userService.sendResetPasswordEmail(email);
+            const { email, platform, resetUrl } = req.body;
+            const requestedPlatform = platform === "mobile" ? "mobile" : "web";
+            const user = await userService.sendResetPasswordEmail(email, requestedPlatform, resetUrl);
             return res.status(200).json(
                 { success: true, 
                     data: user,

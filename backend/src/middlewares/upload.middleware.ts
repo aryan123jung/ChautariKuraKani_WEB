@@ -38,6 +38,8 @@
 //     fields: (fieldsArray: { name: string; maxCount?: number }[]) => upload.fields(fieldsArray)
 // };
 
+
+
 import multer from "multer";
 import { v4 as uuidv4 } from "uuid";
 import path from "path";
@@ -55,6 +57,10 @@ const storage = multer.diskStorage({
 
     if (file.fieldname === "coverUrl") {
       folder = "uploads/cover";
+    }
+
+    if (file.fieldname === "media") {
+      folder = "uploads/posts";
     }
 
     const uploadPath = path.resolve(process.cwd(), folder);
@@ -77,9 +83,18 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  if (!file.mimetype.startsWith("image/")) {
+  if (file.fieldname === "profileUrl" || file.fieldname === "coverUrl") {
+    if (!file.mimetype.startsWith("image/")) {
+      return cb(new HttpError(400, "Only image files are allowed"));
+    }
+  } else if (file.fieldname === "media") {
+    if (!file.mimetype.startsWith("image/") && !file.mimetype.startsWith("video/")) {
+      return cb(new HttpError(400, "Only image or video files are allowed for posts"));
+    }
+  } else if (!file.mimetype.startsWith("image/")) {
     return cb(new HttpError(400, "Only image files are allowed"));
   }
+
   cb(null, true);
 };
 
@@ -90,6 +105,7 @@ const upload = multer({
 });
 
 export const uploads = {
+  single: (fieldName: string) => upload.single(fieldName),
   fields: (fields: { name: string; maxCount?: number }[]) =>
     upload.fields(fields),
 };

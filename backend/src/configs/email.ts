@@ -10,12 +10,18 @@ export const transporter = nodemailer.createTransport({
     },
 });
 
-export const sendEmail = async (to: string, subject: string, html: string) => {
+export const sendEmail = async (
+    to: string,
+    subject: string,
+    html: string,
+    text?: string
+) => {
     const mailOptions = {
         from: `ChautariKuraKani <${EMAIL_USER}>`,
         to,
         subject,
         html,
+        text,
     };
     await transporter.sendMail(mailOptions);
 }

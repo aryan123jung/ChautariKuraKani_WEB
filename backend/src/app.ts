@@ -6,6 +6,7 @@ import adminUserRoutes from './routes/admin/user.route';
 import cors from 'cors';
 import path from "path";
 import { HttpError } from './errors/http-error';
+import postRoutes from './routes/post.routes';
 
 dotenv.config();
 console.log(process.env.PORT);
@@ -23,6 +24,7 @@ app.use(cors(corsOptions));
 app.use(bodyParser.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/admin/users',adminUserRoutes);
+app.use('/api/post',postRoutes)
 
 
 app.use((err: Error, req: Request, res: Response, next: Function) => {
