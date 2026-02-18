@@ -18,6 +18,11 @@ router.get(
   postController.getAllPosts
 );
 
+router.get(
+  "/:id",
+  postController.getOnePost
+);
+
 router.put(
   "/:id",
   authorizedMiddleware,

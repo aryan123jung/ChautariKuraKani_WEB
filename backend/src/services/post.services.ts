@@ -32,6 +32,14 @@ export class PostService {
     return { posts, pagination };
   }
 
+  async getPostById(id: string) {
+    const post = await postRepo.findById(id);
+    if (!post) {
+      throw new HttpError(404, "Post not found");
+    }
+    return post;
+  }
+
   async updatePost(id: string, userId: string, data: any) {
     const post = await postRepo.findById(id);
     if (!post) {
