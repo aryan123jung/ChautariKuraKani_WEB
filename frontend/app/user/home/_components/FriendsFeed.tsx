@@ -84,7 +84,7 @@ export default function FriendsFeed({ user }: { user: UserData }) {
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <div key={post.id} className="bg-white rounded-md shadow p-4">
+        <div key={post.id} className="bg-white dark:bg-zinc-900 rounded-md shadow p-4 border border-transparent dark:border-zinc-800">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <img
@@ -93,13 +93,13 @@ export default function FriendsFeed({ user }: { user: UserData }) {
                 className="w-10 h-10 rounded-full object-cover"
               />
               <div>
-                <p className="font-semibold">{post.user}</p>
-                <p className="text-xs text-gray-500">{post.time}</p>
+                <p className="font-semibold text-gray-900 dark:text-zinc-100">{post.user}</p>
+                <p className="text-xs text-gray-500 dark:text-zinc-400">{post.time}</p>
               </div>
             </div>
-            <span className="cursor-pointer">...</span>
+            <span className="cursor-pointer text-gray-700 dark:text-zinc-300">...</span>
           </div>
-          <p className="mb-2">{post.text}</p>
+          <p className="mb-2 text-gray-800 dark:text-zinc-200">{post.text}</p>
           {post.img && (
             <img
               src={post.img}
@@ -107,7 +107,7 @@ export default function FriendsFeed({ user }: { user: UserData }) {
               className="w-full rounded-md object-cover"
             />
           )}
-          <div className="flex gap-4 mt-2 text-gray-500">
+          <div className="flex gap-4 mt-2 text-gray-500 dark:text-zinc-400">
             <button>👍</button>
             <button>👎</button>
             <button>💬</button>

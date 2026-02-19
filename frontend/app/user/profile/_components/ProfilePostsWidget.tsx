@@ -301,16 +301,16 @@ export default function ProfilePostsWidget({
   };
 
   return (
-    <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
+    <section className="mt-8 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 sm:p-6 shadow-sm">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-slate-900">Posts</h2>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700">
+        <h2 className="text-xl font-semibold text-slate-900 dark:text-zinc-100">Posts</h2>
+        <span className="rounded-full bg-slate-100 dark:bg-zinc-900 px-3 py-1 text-sm text-slate-700 dark:text-zinc-300">
           {myPosts.length} total
         </span>
       </div>
 
       {myPosts.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-slate-500">
+        <div className="rounded-2xl border border-dashed border-slate-300 dark:border-zinc-700 p-8 text-center text-slate-500 dark:text-zinc-400">
           No posts yet. Click Add Post to share something.
         </div>
       )}
@@ -327,24 +327,24 @@ export default function ProfilePostsWidget({
           return (
             <article
               key={post._id}
-              className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+              className="overflow-hidden rounded-2xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm"
             >
               <div className="p-4 sm:p-5">
                 <div className="mb-4 flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="relative h-11 w-11 overflow-hidden rounded-full bg-slate-200">
+                    <div className="relative h-11 w-11 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
                       {authorImage ? (
                         <Image src={authorImage} alt="Author" fill className="object-cover" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-600">
+                        <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-600 dark:text-zinc-200">
                           {getAuthorName(post.authorId).slice(0, 1)}
                         </div>
                       )}
                     </div>
 
                     <div>
-                      <p className="font-semibold text-slate-900">{getAuthorName(post.authorId)}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="font-semibold text-slate-900 dark:text-zinc-100">{getAuthorName(post.authorId)}</p>
+                      <p className="text-xs text-slate-500 dark:text-zinc-400">
                         {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
                       </p>
                     </div>
@@ -353,13 +353,13 @@ export default function ProfilePostsWidget({
                   <div className="relative">
                     <button
                       onClick={() => updateState(post._id, { isMenuOpen: !state.isMenuOpen })}
-                      className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100"
+                      className="rounded-full p-2 text-slate-500 dark:text-zinc-400 transition hover:bg-slate-100 dark:hover:bg-zinc-800"
                     >
                       <MoreHorizontal size={18} />
                     </button>
 
                     {state.isMenuOpen && (
-                      <div className="absolute right-0 z-10 mt-2 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+                      <div className="absolute right-0 z-10 mt-2 w-36 overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg">
                         <button
                           onClick={() =>
                             updateState(post._id, {
@@ -368,7 +368,7 @@ export default function ProfilePostsWidget({
                               editCaption: post.caption || "",
                             })
                           }
-                          className="w-full px-4 py-2 text-left text-sm text-slate-700 hover:bg-slate-100"
+                          className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800"
                         >
                           Edit Post
                         </button>
@@ -377,7 +377,7 @@ export default function ProfilePostsWidget({
                             setDeletePost(post);
                             setIsDeleteModalOpen(true);
                           }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
                         >
                           Delete Post
                         </button>
@@ -387,19 +387,19 @@ export default function ProfilePostsWidget({
                 </div>
 
                 {!state.isEditing && post.caption && (
-                  <p className="mb-4 whitespace-pre-wrap text-[15px] leading-6 text-slate-800">
+                  <p className="mb-4 whitespace-pre-wrap text-[15px] leading-6 text-slate-800 dark:text-zinc-200">
                     {post.caption}
                   </p>
                 )}
 
                 {state.isEditing && (
-                  <div className="mb-4 space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                  <div className="mb-4 space-y-3 rounded-xl border border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 p-3">
                     <textarea
                       value={state.editCaption}
                       onChange={(e) => updateState(post._id, { editCaption: e.target.value })}
                       rows={3}
                       placeholder="Update your caption..."
-                      className="w-full rounded-lg border border-slate-300 p-3 text-sm focus:border-slate-400 focus:outline-none"
+                      className="w-full rounded-lg border border-slate-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3 text-sm text-slate-900 dark:text-zinc-100 focus:border-slate-400 dark:focus:border-zinc-600 focus:outline-none"
                     />
                     <input
                       type="file"
@@ -414,14 +414,14 @@ export default function ProfilePostsWidget({
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => updateState(post._id, { isEditing: false, editPreview: null, editMedia: null })}
-                        className="rounded-lg bg-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-300"
+                        className="rounded-lg bg-slate-200 dark:bg-zinc-700 px-3 py-1.5 text-sm text-slate-700 dark:text-zinc-100 hover:bg-slate-300 dark:hover:bg-zinc-600"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={() => void onEditPost(post)}
                         disabled={state.isBusy}
-                        className="rounded-lg bg-slate-900 px-3 py-1.5 text-sm text-white hover:bg-slate-800 disabled:opacity-60"
+                        className="rounded-lg bg-slate-900 dark:bg-zinc-700 px-3 py-1.5 text-sm text-white hover:bg-slate-800 dark:hover:bg-zinc-600 disabled:opacity-60"
                       >
                         {state.isBusy ? "Saving..." : "Save"}
                       </button>
@@ -431,7 +431,7 @@ export default function ProfilePostsWidget({
               </div>
 
               {!state.isEditing && post.mediaUrl && post.mediaType === "image" && (
-                <div className="relative h-[24rem] w-full bg-slate-100">
+                <div className="relative h-[24rem] w-full bg-slate-100 dark:bg-zinc-800">
                   <Image
                     src={buildMediaUrl(post.mediaUrl, "image")}
                     alt="Post media"
@@ -462,8 +462,8 @@ export default function ProfilePostsWidget({
                 </div>
               )}
 
-              <div className="border-t border-slate-100 p-3">
-                <div className="mb-2 flex items-center justify-between px-1 text-xs text-slate-500">
+              <div className="border-t border-slate-100 dark:border-zinc-800 p-3">
+                <div className="mb-2 flex items-center justify-between px-1 text-xs text-slate-500 dark:text-zinc-400">
                   <span>{post.likes?.length || 0} likes</span>
                   <span>{post.commentsCount ?? comments.length} comments</span>
                 </div>
@@ -474,8 +474,8 @@ export default function ProfilePostsWidget({
                     disabled={state.isBusy}
                     className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition ${
                       liked
-                        ? "bg-blue-50 text-blue-600"
-                        : "text-slate-600 hover:bg-slate-100"
+                        ? "bg-blue-50 dark:bg-zinc-700 text-blue-600 dark:text-emerald-300"
+                        : "text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800"
                     } disabled:opacity-60`}
                   >
                     <Heart size={16} />
@@ -484,7 +484,7 @@ export default function ProfilePostsWidget({
 
                   <button
                     onClick={() => openCommentsModal(post._id)}
-                    className="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
+                    className="flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium text-slate-600 dark:text-zinc-300 transition hover:bg-slate-100 dark:hover:bg-zinc-800"
                   >
                     <MessageCircle size={16} />
                     Comment ({post.commentsCount ?? comments.length})

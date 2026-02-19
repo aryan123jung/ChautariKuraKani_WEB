@@ -28,10 +28,16 @@
 } */
 
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 
 :root {
   --background: #ffffff;
   --foreground: #171717;
+}
+
+html.dark {
+  --background: #0d0d0d;
+  --foreground: #e5e5e5;
 }
 
 @theme inline {
@@ -41,17 +47,77 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #ededed;
-    --foreground: #0a0a0a;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Global dark-surface fallback mapping for existing utility-heavy components */
+html.dark .bg-white {
+  background-color: #111111 !important;
+}
+
+html.dark .bg-gray-100,
+html.dark .bg-gray-200,
+html.dark .bg-gray-300,
+html.dark .bg-slate-50,
+html.dark .bg-slate-100,
+html.dark .bg-slate-200 {
+  background-color: #1a1a1a !important;
+}
+
+html.dark .bg-slate-800,
+html.dark .bg-slate-900 {
+  background-color: #1f1f1f !important;
+}
+
+html.dark .text-black,
+html.dark .text-gray-900,
+html.dark .text-slate-900 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .text-gray-800,
+html.dark .text-gray-700,
+html.dark .text-gray-600,
+html.dark .text-gray-500,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #c7c7c7 !important;
+}
+
+html.dark .border-gray-100,
+html.dark .border-gray-200,
+html.dark .border-gray-300,
+html.dark .border-slate-100,
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-slate-700,
+html.dark .border-slate-800 {
+  border-color: #333333 !important;
+}
+
+html.dark .hover\:bg-gray-100:hover,
+html.dark .hover\:bg-gray-200:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #2a2a2a !important;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  background-color: #161616;
+  color: #ededed;
+  border-color: #343434;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #8a8a8a;
 }
 
 /* --------- Hover Scrollbar --------- */
@@ -78,3 +144,54 @@ body {
   border-radius: 9999px;
 }
 
+ .scrollbar-hidden:hover::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+html.dark .scrollbar-hidden:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.9);
+}
+
+html.dark .scrollbar-hidden:hover::-webkit-scrollbar-track {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Feed scrollbar (always visible when needed) */
+.scrollbar-feed {
+  scrollbar-gutter: stable;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: transparent transparent;
+}
+
+.scrollbar-feed::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-feed:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.45) rgba(0, 0, 0, 0.08);
+}
+
+.scrollbar-feed:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.45);
+  border-radius: 9999px;
+}
+
+.scrollbar-feed:hover::-webkit-scrollbar-track {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+html.dark .scrollbar-feed {
+  scrollbar-color: transparent transparent;
+}
+
+html.dark .scrollbar-feed:hover {
+  scrollbar-color: rgba(0, 0, 0, 0.95) rgba(255, 255, 255, 0.1);
+}
+
+html.dark .scrollbar-feed:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.95);
+}
+
+html.dark .scrollbar-feed:hover::-webkit-scrollbar-track {
+  background-color: rgba(255, 255, 255, 0.1);
+}

@@ -65,7 +65,7 @@ export default function FeedToggle({ user }: { user: UserData }) {
         </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto pr-1">
+      <div className="scrollbar-feed flex-1 min-h-0 overflow-y-auto pr-1">
         {feed === "home" ? <HomeFeed user={user} /> : <FriendsFeed user={user} />}
       </div>
     </div>

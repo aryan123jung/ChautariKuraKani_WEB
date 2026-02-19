@@ -24,7 +24,7 @@ export default function SideNavbar({ open, onClose, user }: Props) {
   const sidebarLinkClass = (path: string) =>
     pathname === path
       ? "bg-[#76C05D] text-white font-semibold px-3 py-2 rounded-md block"
-      : "text-black hover:text-green-600 hover:underline transition-colors block px-3 py-2 rounded-md";
+      : "text-black dark:text-zinc-200 hover:text-green-600 hover:underline transition-colors block px-3 py-2 rounded-md";
 
   const handleLogout = async () => {
     await clearAuthCookies();
@@ -52,10 +52,10 @@ export default function SideNavbar({ open, onClose, user }: Props) {
         className={`fixed top-0 left-0 h-full w-64 z-50 flex flex-col
             transform transition-transform duration-300
             ${open ? "translate-x-0" : "-translate-x-full"}
-            bg-white`}
+            bg-white dark:bg-zinc-950 dark:border-r dark:border-zinc-800`}
         >
         <div>
-          <div className="p-6 border-b border-green-700 flex justify-between items-center">
+          <div className="p-6 border-b border-green-700 dark:border-zinc-800 flex justify-between items-center">
             <span className="font-semibold text-lg">Menu</span>
             <button onClick={onClose} className="text-xl">✕</button>
           </div>
@@ -80,6 +80,7 @@ export default function SideNavbar({ open, onClose, user }: Props) {
                 border border-gray-300
                 hover:border-green-500
                 hover:bg-green-50
+                dark:bg-zinc-900 dark:border-zinc-700 dark:hover:bg-zinc-800
                 hover:shadow-md
                 transition-all duration-200"
             >
@@ -95,7 +96,7 @@ export default function SideNavbar({ open, onClose, user }: Props) {
             </p>
           </Link>
 
-          <div className="border-t border-green-700 my-3" />
+          <div className="border-t border-green-700 dark:border-zinc-800 my-3" />
 
           <button
             onClick={handleLogout}

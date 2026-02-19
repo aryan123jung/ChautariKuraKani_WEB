@@ -110,14 +110,14 @@ export default function RightSidebar({ user }: { user: UserData }) {
     rounded-lg
     p-2
     border border-gray-200
-    bg-white
+    bg-white dark:bg-zinc-900 dark:border-zinc-700
     hover:border-green-500
-    hover:bg-green-50
+    hover:bg-green-50 dark:hover:bg-zinc-800
     hover:shadow-sm
     transition-all duration-200
   "
 >
-  <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-200">
+  <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-gray-200 dark:bg-zinc-700">
     {profileImage ? (
       <img
         src={profileImage}
@@ -130,24 +130,24 @@ export default function RightSidebar({ user }: { user: UserData }) {
   </div>
 
   <div className="flex flex-col leading-tight">
-    <p className="font-semibold text-sm text-gray-800">
+    <p className="font-semibold text-sm text-gray-800 dark:text-zinc-100">
       {user.firstName} {user.lastName}
     </p>
-    <span className="text-xs text-gray-500">View profile</span>
+    <span className="text-xs text-gray-500 dark:text-zinc-400">View profile</span>
   </div>
 </Link>
 
 
 
 
-      <div className="bg-gray-100 rounded-md p-2 flex flex-col h-[90%]">
+      <div className="bg-gray-100 dark:bg-zinc-900 rounded-md p-2 flex flex-col h-[90%]">
         <div className="bg-green-500 text-white px-2 py-1 rounded-t-md font-semibold">
           AI Chat Bot
         </div>
 
         <div className="p-2 space-y-2 flex-1 overflow-y-auto scrollbar-hidden">
-          <div className="bg-white rounded-md p-1">Heyyyyyyyyyyyyyyyyy</div>
-          <div className="bg-white rounded-md p-1">
+          <div className="bg-white dark:bg-zinc-800 dark:text-zinc-200 rounded-md p-1">Heyyyyyyyyyyyyyyyyy</div>
+          <div className="bg-white dark:bg-zinc-800 dark:text-zinc-200 rounded-md p-1">
             Hi!! How can I help you?
           </div>
         </div>
@@ -156,9 +156,9 @@ export default function RightSidebar({ user }: { user: UserData }) {
           <input
             type="text"
             placeholder="Ask me anything...."
-            className="flex-1 border border-gray-300 rounded-l-md px-2 outline-none"
+            className="flex-1 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 dark:text-zinc-100 rounded-l-md px-2 outline-none"
           />
-          <button className="bg-black text-white px-2 rounded-r-md">
+          <button className="bg-black dark:bg-zinc-700 text-white px-2 rounded-r-md">
             ➤
           </button>
         </div>
