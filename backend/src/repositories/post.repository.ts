@@ -1,10 +1,13 @@
-import { QueryFilter } from "mongoose";
-import { IPost, PostModel } from "../models/post.model";
+import { QueryFilter, Types } from "mongoose";
+import { IPost, IPostComment, PostModel } from "../models/post.model";
 
 export interface IPostRepository {
   create(post: IPost): Promise<IPost>;
   findById(id: string): Promise<IPost | null>;
   update(id: string, data: Partial<IPost>): Promise<IPost | null>;
+  addLike(id: string, userId: string): Promise<IPost | null>;
+  addComment(id: string, comment: IPostComment): Promise<IPost | null>;
+  removeComment(id: string, commentId: string): Promise<IPost | null>;
   findAll({
     page,
     size
@@ -30,6 +33,42 @@ export class PostRepository implements IPostRepository {
   async update(id: string, data: Partial<IPost>): Promise<IPost | null> {
     return await PostModel.findByIdAndUpdate(id, data, { new: true })
       .populate("authorId", "firstName lastName email profileImage");
+  }
+
+  async addLike(id: string, userId: string): Promise<IPost | null> {
+    return await PostModel.findByIdAndUpdate(
+      id,
+      { $addToSet: { likes: new Types.ObjectId(userId) } },
+      { new: true }
+    ).populate("authorId", "firstName lastName email profileImage");
+  }
+
+  async addComment(id: string, comment: IPostComment): Promise<IPost | null> {
+    return await PostModel.findByIdAndUpdate(
+      id,
+      {
+        $push: {
+          comments: {
+            userId: new Types.ObjectId(comment.userId.toString()),
+            text: comment.text,
+            createdAt: new Date()
+          }
+        },
+        $inc: { commentsCount: 1 }
+      },
+      { new: true }
+    ).populate("authorId", "firstName lastName email profileImage");
+  }
+
+  async removeComment(id: string, commentId: string): Promise<IPost | null> {
+    return await PostModel.findOneAndUpdate(
+      { _id: id, "comments._id": new Types.ObjectId(commentId) },
+      {
+        $pull: { comments: { _id: new Types.ObjectId(commentId) } },
+        $inc: { commentsCount: -1 }
+      },
+      { new: true }
+    ).populate("authorId", "firstName lastName email profileImage");
   }
 
   async findAll({ page, size }: { page: number; size: number })

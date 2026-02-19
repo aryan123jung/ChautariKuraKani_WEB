@@ -23,6 +23,29 @@ router.get(
   postController.getOnePost
 );
 
+router.post(
+  "/:id/like",
+  authorizedMiddleware,
+  postController.likePost
+);
+
+router.post(
+  "/:id/comments",
+  authorizedMiddleware,
+  postController.createComment
+);
+
+router.get(
+  "/:id/comments",
+  postController.getPostComments
+);
+
+router.delete(
+  "/:id/comments/:commentId",
+  authorizedMiddleware,
+  postController.deletePostComment
+);
+
 router.put(
   "/:id",
   authorizedMiddleware,

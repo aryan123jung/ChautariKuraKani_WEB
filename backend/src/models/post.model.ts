@@ -1,10 +1,18 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { PostType } from "../types/post.type";
 
+export interface IPostComment {
+  _id?: mongoose.Types.ObjectId;
+  userId: mongoose.Types.ObjectId | string;
+  text: string;
+  createdAt: Date;
+}
+
 export interface IPost extends Omit<PostType, "authorId">, Document {
   authorId: mongoose.Types.ObjectId | string;
   _id: mongoose.Types.ObjectId;
   likes: mongoose.Types.ObjectId[];
+  comments: IPostComment[];
   commentsCount: number;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +34,24 @@ const schema = new Schema<IPost>(
       {
         type: Schema.Types.ObjectId,
         ref: "User"
+      }
+    ],
+    comments: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: "User",
+          required: true
+        },
+        text: {
+          type: String,
+          required: true,
+          trim: true
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now
+        }
       }
     ],
 

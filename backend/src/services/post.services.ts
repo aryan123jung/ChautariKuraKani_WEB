@@ -6,6 +6,11 @@ import path from "path";
 const postRepo = new PostRepository();
 
 export class PostService {
+  private getAuthorId(post: any): string {
+    return typeof post.authorId === "string"
+      ? post.authorId
+      : (post.authorId as any)?._id?.toString?.() || post.authorId.toString();
+  }
 
   async createPost(data: any) {
     return await postRepo.create(data);
@@ -46,10 +51,7 @@ export class PostService {
       throw new HttpError(404, "Post not found");
     }
 
-    const postAuthorId =
-      typeof post.authorId === "string"
-        ? post.authorId
-        : (post.authorId as any)?._id?.toString?.() || post.authorId.toString();
+    const postAuthorId = this.getAuthorId(post);
 
     if (postAuthorId !== userId) {
       throw new HttpError(403, "You can only edit your own post");
@@ -73,6 +75,71 @@ export class PostService {
     const updatedPost = await postRepo.update(id, data);
     if (!updatedPost) {
       throw new HttpError(404, "Post not found");
+    }
+
+    return updatedPost;
+  }
+
+  async likePost(postId: string, userId: string) {
+    const post = await postRepo.addLike(postId, userId);
+    if (!post) {
+      throw new HttpError(404, "Post not found");
+    }
+    return post;
+  }
+
+  async addComment(postId: string, userId: string, text?: string) {
+    if (!text || !text.trim()) {
+      throw new HttpError(400, "Comment text is required");
+    }
+
+    const post = await postRepo.addComment(postId, {
+      userId,
+      text: text.trim(),
+      createdAt: new Date()
+    });
+
+    if (!post) {
+      throw new HttpError(404, "Post not found");
+    }
+    return post;
+  }
+
+  async getComments(postId: string) {
+    const post = await postRepo.findById(postId);
+    if (!post) {
+      throw new HttpError(404, "Post not found");
+    }
+    return post.comments || [];
+  }
+
+  async deleteComment(postId: string, commentId: string, userId: string) {
+    const post = await postRepo.findById(postId);
+    if (!post) {
+      throw new HttpError(404, "Post not found");
+    }
+
+    const comment = (post.comments || []).find(
+      (item: any) => item._id?.toString() === commentId
+    );
+
+    if (!comment) {
+      throw new HttpError(404, "Comment not found");
+    }
+
+    const commentOwnerId =
+      typeof comment.userId === "string"
+        ? comment.userId
+        : comment.userId.toString();
+    const postOwnerId = this.getAuthorId(post);
+
+    if (commentOwnerId !== userId && postOwnerId !== userId) {
+      throw new HttpError(403, "You can only delete your own comment");
+    }
+
+    const updatedPost = await postRepo.removeComment(postId, commentId);
+    if (!updatedPost) {
+      throw new HttpError(404, "Comment not found");
     }
 
     return updatedPost;
