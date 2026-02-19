@@ -297,19 +297,19 @@ export default async function HomePage() {
   if (!user) return null;
 
   return (
-    <div className="flex h-[calc(100vh-64px)] gap-4 p-4">
+    <div className="flex h-[calc(100vh-80px)] overflow-hidden gap-4 p-4">
       {/* Left sidebar */}
-      <aside className="w-1/4 flex-shrink-0">
+      <aside className="w-1/4 flex-shrink-0 overflow-hidden">
         <LeftSidebar />
       </aside>
 
       {/* Main feed */}
-      <main className="flex-1">
+      <main className="flex-1 min-h-0 overflow-hidden">
         <FeedToggle user={user} />
       </main>
 
       {/* Right sidebar */}
-      <aside className="w-1/4 flex-shrink-0">
+      <aside className="w-1/4 flex-shrink-0 overflow-hidden">
         <RightSidebar user={user} />
       </aside>
     </div>

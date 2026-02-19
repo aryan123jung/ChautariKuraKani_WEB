@@ -27,3 +27,36 @@ export const updateUserSchema = z.object({
         }),
 })
 export type UpdateUserData = z.infer<typeof updateUserSchema>;
+
+export type PostAuthor = {
+    _id?: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    profileImage?: string;
+    profileUrl?: string;
+};
+
+export type PostItem = {
+    _id: string;
+    caption?: string;
+    mediaUrl?: string;
+    mediaType?: "image" | "video";
+    authorId?: string | PostAuthor;
+    likes?: string[];
+    comments?: {
+        _id?: string;
+        userId?: string | {
+            _id?: string;
+            firstName?: string;
+            lastName?: string;
+            profileImage?: string;
+            profileUrl?: string;
+        };
+        text: string;
+        createdAt?: string;
+    }[];
+    commentsCount?: number;
+    createdAt?: string;
+    updatedAt?: string;
+};
