@@ -20,6 +20,7 @@ export default function SideNavbar({ open, onClose, user }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+  const isProfileActive = pathname === "/user/profile";
 
   const sidebarLinkClass = (path: string) =>
     pathname === path
@@ -74,16 +75,19 @@ export default function SideNavbar({ open, onClose, user }: Props) {
         <div className="mt-auto p-4">
           <Link
             href="/user/profile"
-            className="flex items-center gap-2 bg-gray-100
+            className={`flex items-center gap-2
+                ${isProfileActive
+                ? "bg-green-50 border-green-500 dark:bg-zinc-800 dark:border-green-500"
+                : "bg-gray-100 dark:bg-zinc-900 border-gray-300 dark:border-zinc-700"}
                 rounded-md
                 p-2
-                border border-gray-300
+                border
                 hover:border-green-500
                 hover:bg-green-50
                 dark:bg-zinc-900 dark:border-zinc-700 dark:hover:bg-zinc-800
                 hover:shadow-md
-                transition-all duration-200"
-            >
+                transition-all duration-200`}
+          >
             <div className="w-10 h-10 rounded-full overflow-hidden">
               <img
                 src={profileImage}

@@ -29,7 +29,8 @@ export default function ProfileDetails({
       <div className="flex gap-2">
         <button
           onClick={onAddPost}
-          className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+          // className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+          className="rounded-xl bg-[#76C05D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
         >
           Add Post
         </button>

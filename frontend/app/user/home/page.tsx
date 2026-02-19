@@ -299,7 +299,7 @@ export default async function HomePage() {
   return (
     <div className="flex h-[calc(100vh-80px)] overflow-hidden gap-4 p-4">
       {/* Left sidebar */}
-      <aside className="w-1/4 flex-shrink-0 overflow-hidden">
+      <aside className="w-1/4 h-full flex-shrink-0 overflow-hidden">
         <LeftSidebar />
       </aside>
 
@@ -309,7 +309,7 @@ export default async function HomePage() {
       </main>
 
       {/* Right sidebar */}
-      <aside className="w-1/4 flex-shrink-0 overflow-hidden">
+      <aside className="w-1/4 h-full flex-shrink-0 overflow-hidden">
         <RightSidebar user={user} />
       </aside>
     </div>

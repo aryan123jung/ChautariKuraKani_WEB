@@ -46,6 +46,7 @@
 
 "use client";
 
+import { FormEvent, useState } from "react";
 import Link from "next/link";
 import {User} from "lucide-react";
 
@@ -55,15 +56,64 @@ type UserData = {
   profileUrl?: string;
 };
 
+type ChatMessage = {
+  role: "user" | "ai";
+  text: string;
+};
+
 export default function RightSidebar({ user }: { user: UserData }) {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    { role: "ai", text: "Hi!! How can I help you? 😄" },
+  ]);
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const profileImage = user.profileUrl
     ? `${backendUrl}/uploads/profile/${user.profileUrl}`
     : "/image/profile_icon_214017.ico";
 
+  const sendMessage = async (e: FormEvent) => {
+    e.preventDefault();
+    const userMessage = input.trim();
+    if (!userMessage || isLoading) return;
+
+    setMessages((prev) => [...prev, { role: "user", text: userMessage }]);
+    setInput("");
+    setIsLoading(true);
+
+    try {
+      const response = await fetch("/api/chatbot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage }),
+      });
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        data?: { text?: string };
+        message?: string;
+      };
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.message || "Failed to get AI response");
+      }
+
+      const aiText = data.data?.text || "No response from AI.";
+      setMessages((prev) => [...prev, { role: "ai", text: aiText }]);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : "Chatbot failed";
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", text: `Oops, ${message}. Try again 🙏` },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
 
       {/* <Link
         href="/user/profile"
@@ -140,28 +190,51 @@ export default function RightSidebar({ user }: { user: UserData }) {
 
 
 
-      <div className="bg-gray-100 dark:bg-zinc-900 rounded-md p-2 flex flex-col h-[90%]">
+      <div className="flex-1 min-h-0 bg-gray-100 dark:bg-zinc-900 rounded-md p-2 flex flex-col">
         <div className="bg-green-500 text-white px-2 py-1 rounded-t-md font-semibold">
           AI Chat Bot
         </div>
 
-        <div className="p-2 space-y-2 flex-1 overflow-y-auto scrollbar-hidden">
-          <div className="bg-white dark:bg-zinc-800 dark:text-zinc-200 rounded-md p-1">Heyyyyyyyyyyyyyyyyy</div>
-          <div className="bg-white dark:bg-zinc-800 dark:text-zinc-200 rounded-md p-1">
-            Hi!! How can I help you?
-          </div>
+        <div className="p-2 space-y-2 flex-1 overflow-y-auto scrollbar-feed">
+          {messages.map((message, index) => {
+            const isUser = message.role === "user";
+            return (
+              <div
+                key={`${message.role}-${index}`}
+                className={`rounded-md p-2 text-sm ${
+                  isUser
+                    ? "bg-green-600 text-white ml-6"
+                    : "bg-white dark:bg-zinc-800 dark:text-zinc-200 mr-6"
+                }`}
+              >
+                {message.text}
+              </div>
+            );
+          })}
+
+          {isLoading && (
+            <div className="rounded-md p-2 text-sm bg-white dark:bg-zinc-800 dark:text-zinc-200 mr-6">
+              Thinking...
+            </div>
+          )}
         </div>
 
-        <div className="flex mt-2">
+        <form onSubmit={sendMessage} className="flex mt-2">
           <input
             type="text"
             placeholder="Ask me anything...."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
             className="flex-1 border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 dark:text-zinc-100 rounded-l-md px-2 outline-none"
           />
-          <button className="bg-black dark:bg-zinc-700 text-white px-2 rounded-r-md">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="bg-black dark:bg-zinc-700 text-white px-2 rounded-r-md disabled:opacity-50"
+          >
             ➤
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
