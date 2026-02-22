@@ -70,13 +70,36 @@ type SearchUsersResponse = {
         firstName?: string;
         lastName?: string;
         username?: string;
+        email?: string;
         profileUrl?: string;
+        coverUrl?: string;
+        role?: string;
+        createdAt?: string;
+        updatedAt?: string;
     }>;
     pagination?: {
         page: number;
         size: number;
         totalUsers: number;
         totalPages: number;
+    };
+    message?: string;
+};
+
+type GetUserResponse = {
+    success: boolean;
+    data?: {
+        _id?: string;
+        id?: string;
+        firstName?: string;
+        lastName?: string;
+        username?: string;
+        email?: string;
+        profileUrl?: string;
+        coverUrl?: string;
+        role?: string;
+        createdAt?: string;
+        updatedAt?: string;
     };
     message?: string;
 };
@@ -161,13 +184,27 @@ export const resetPassword = async (token: string, newPassword: string) => {
     }
 }
 
-export const searchUsers = async (search: string, page = 1, size = 8): Promise<SearchUsersResponse> => {
+export const searchUsers = async (search?: string, page = 1, size = 8): Promise<SearchUsersResponse> => {
     try {
+        const params: { page: number; size: number; search?: string } = { page, size };
+        if (search && search.trim()) {
+            params.search = search;
+        }
+
         const response = await axiosInstance.get(API.Auth.SEARCH_USERS, {
-            params: { search, page, size },
+            params,
         });
         return response.data as SearchUsersResponse;
     } catch (error: unknown) {
         throw new Error(getErrorMessage(error, "Search users failed"));
+    }
+};
+
+export const getUserById = async (userId: string): Promise<GetUserResponse> => {
+    try {
+        const response = await axiosInstance.get(API.Auth.GET_USER_BY_ID(userId));
+        return response.data as GetUserResponse;
+    } catch (error: unknown) {
+        throw new Error(getErrorMessage(error, "Get user failed"));
     }
 };

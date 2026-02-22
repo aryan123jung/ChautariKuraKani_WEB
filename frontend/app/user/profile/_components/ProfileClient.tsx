@@ -22,35 +22,50 @@ type ProfileUser = {
   initialPosts?: PostItem[];
 };
 
-export default function ProfileClient({ user }: { user: ProfileUser }) {
+export default function ProfileClient({
+  user,
+  currentUserId,
+  viewerProfileUrl,
+}: {
+  user: ProfileUser;
+  currentUserId?: string;
+  viewerProfileUrl?: string;
+}) {
   const [isEditing, setIsEditing] = useState(false);
   const [isAddPostOpen, setIsAddPostOpen] = useState(false);
   const [posts, setPosts] = useState<PostItem[]>(user.initialPosts || []);
 
-  const userId = user.id || user._id || "";
+  const profileUserId = user.id || user._id || "";
+  const viewerUserId = currentUserId || "";
+  const canManageProfile = !!viewerUserId && viewerUserId === profileUserId;
 
   return (
     <>
       {!isEditing ? (
         <ProfileDetails
           user={user}
-          onEdit={() => setIsEditing(true)}
-          onAddPost={() => setIsAddPostOpen(true)}
+          onEdit={canManageProfile ? () => setIsEditing(true) : undefined}
+          onAddPost={canManageProfile ? () => setIsAddPostOpen(true) : undefined}
+          canManageProfile={canManageProfile}
         />
       ) : (
         <EditProfileForm user={user} onCancel={() => setIsEditing(false)} />
       )}
 
-      <AddPostModal
-        isOpen={isAddPostOpen}
-        onClose={() => setIsAddPostOpen(false)}
-        onPostCreated={(post) => setPosts((prev) => [post, ...prev])}
-      />
+      {canManageProfile && (
+        <AddPostModal
+          isOpen={isAddPostOpen}
+          onClose={() => setIsAddPostOpen(false)}
+          onPostCreated={(post) => setPosts((prev) => [post, ...prev])}
+        />
+      )}
 
-      {userId && (
+      {profileUserId && (
         <ProfilePostsWidget
-          userId={userId}
-          currentUserProfileUrl={user.profileUrl}
+          userId={profileUserId}
+          viewerUserId={viewerUserId}
+          canManagePosts={canManageProfile}
+          currentUserProfileUrl={viewerProfileUrl || user.profileUrl}
           posts={posts}
           onPostsChange={setPosts}
         />

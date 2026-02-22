@@ -4,6 +4,7 @@ export const API = {
         REGISTER: "/api/auth/register",
         WHOAMI: '/api/auth/whoami',
         SEARCH_USERS: "/api/auth/users",
+        GET_USER_BY_ID: (userId: string) => `/api/auth/user/${userId}`,
         UPDATEPROFILE: '/api/auth/update-profile',
         REQUEST_PASSWORD_RESET: '/api/auth/send-reset-password-email',
         RESET_PASSWORD: (token: string) => `/api/auth/reset-password/${token}`,

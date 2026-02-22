@@ -25,7 +25,11 @@ export default async function ProfilePage() {
 
         <div className="relative px-4 pb-6 sm:px-8">
           <ProfileAvatar profileUrl={user.profileUrl} />
-          <ProfileClient user={{ ...user, initialPosts }} />
+          <ProfileClient
+            user={{ ...user, initialPosts }}
+            currentUserId={user.id || user._id}
+            viewerProfileUrl={user.profileUrl}
+          />
           <ProfileStats user={user} posts={initialPosts} />
         </div>
       </div>

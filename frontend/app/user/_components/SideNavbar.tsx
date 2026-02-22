@@ -20,7 +20,7 @@ export default function SideNavbar({ open, onClose, user }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
-  const isProfileActive = pathname === "/user/profile";
+  const isProfileActive = pathname === "/user/profile" || pathname.startsWith("/user/profile/");
 
   const sidebarLinkClass = (path: string) =>
     pathname === path

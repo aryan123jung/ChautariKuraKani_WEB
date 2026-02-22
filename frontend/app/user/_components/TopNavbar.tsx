@@ -120,7 +120,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
   const onSelectUser = (user: SearchUser) => {
     setSearchTerm(user.username ? `@${user.username}` : `${user.firstName || ""} ${user.lastName || ""}`.trim());
     setIsDropdownOpen(false);
-    router.push(`/user/friends?userId=${user._id}`);
+    router.push(`/user/profile/${user._id}`);
   };
 
   const renderUserName = (user: SearchUser) => {

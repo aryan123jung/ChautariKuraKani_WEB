@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache';
-import {login, register, updateProfile, whoAmI, requestPasswordReset,resetPassword, searchUsers} from '../api/auth';
+import {login, register, updateProfile, whoAmI, requestPasswordReset,resetPassword, searchUsers, getUserById} from '../api/auth';
 import { setAuthToken, setUserData } from '../cookie';
 import { LoginData, RegisterData } from '@/app/(auth)/schema';
 
@@ -149,6 +149,85 @@ export const handleSearchUsers = async (search: string, page = 1, size = 8) => {
             data: [],
             pagination: null,
             message: error instanceof Error ? error.message : "Search user action failed",
+        };
+    }
+};
+
+export const handleGetUserById = async (userId: string) => {
+    try {
+        const response = await getUserById(userId);
+        if (response.success && response.data) {
+            return {
+                success: true,
+                data: response.data,
+                message: response.message || "User fetched successfully",
+            };
+        }
+
+        return {
+            success: false,
+            data: null,
+            message: response.message || "Failed to fetch user",
+        };
+    } catch (error: unknown) {
+        return {
+            success: false,
+            data: null,
+            message: getErrorMessage(error, "Get user action failed"),
+        };
+    }
+};
+
+export const handleFindUserById = async (userId: string) => {
+    try {
+        const pageSize = 50;
+        const firstPage = await searchUsers(undefined, 1, pageSize);
+
+        if (!firstPage.success) {
+            return {
+                success: false,
+                data: null,
+                message: firstPage.message || "Failed to fetch users",
+            };
+        }
+
+        const firstMatch = (firstPage.data || []).find((user) => user._id === userId);
+        if (firstMatch) {
+            return {
+                success: true,
+                data: firstMatch,
+                message: "User fetched successfully",
+            };
+        }
+
+        const totalPages = firstPage.pagination?.totalPages || 1;
+
+        for (let page = 2; page <= totalPages; page += 1) {
+            const pageResult = await searchUsers(undefined, page, pageSize);
+            if (!pageResult.success) {
+                break;
+            }
+
+            const matched = (pageResult.data || []).find((user) => user._id === userId);
+            if (matched) {
+                return {
+                    success: true,
+                    data: matched,
+                    message: "User fetched successfully",
+                };
+            }
+        }
+
+        return {
+            success: false,
+            data: null,
+            message: "User not found",
+        };
+    } catch (error: unknown) {
+        return {
+            success: false,
+            data: null,
+            message: getErrorMessage(error, "Find user action failed"),
         };
     }
 };

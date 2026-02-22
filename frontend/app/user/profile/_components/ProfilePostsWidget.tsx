@@ -66,11 +66,15 @@ const initStateForPost = (post: PostItem): PostUIState => ({
 
 export default function ProfilePostsWidget({
   userId,
+  viewerUserId,
+  canManagePosts,
   currentUserProfileUrl,
   posts,
   onPostsChange,
 }: {
   userId: string;
+  viewerUserId: string;
+  canManagePosts: boolean;
   currentUserProfileUrl?: string;
   posts: PostItem[];
   onPostsChange: (posts: PostItem[]) => void;
@@ -107,7 +111,7 @@ export default function ProfilePostsWidget({
 
   const hasCurrentUserLiked = (post: PostItem) => {
     const likes = post.likes || [];
-    return likes.some((likedBy) => likedBy?.toString() === userId);
+    return likes.some((likedBy) => likedBy?.toString() === viewerUserId);
   };
 
   const getCommentUserId = (comment: NonNullable<PostItem["comments"]>[number]) => {
@@ -195,7 +199,7 @@ export default function ProfilePostsWidget({
     post: PostItem
   ) => {
     const commentUserId = getCommentUserId(comment);
-    if (commentUserId && commentUserId === userId) {
+    if (commentUserId && commentUserId === viewerUserId) {
       return "You";
     }
 
@@ -218,7 +222,7 @@ export default function ProfilePostsWidget({
     post: PostItem
   ) => {
     const commentUserId = getCommentUserId(comment);
-    if (commentUserId && commentUserId === userId) {
+    if (commentUserId && commentUserId === viewerUserId) {
       return profileImageUrl(currentUserProfileUrl || null);
     }
 
@@ -358,7 +362,7 @@ export default function ProfilePostsWidget({
                       <MoreHorizontal size={18} />
                     </button>
 
-                    {state.isMenuOpen && (
+                    {state.isMenuOpen && canManagePosts && (
                       <div className="absolute right-0 z-10 mt-2 w-36 overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg">
                         <button
                           onClick={() =>
@@ -528,8 +532,8 @@ export default function ProfilePostsWidget({
         }}
         canDeleteComment={(comment) =>
           !!activeCommentPost &&
-          (getCommentUserId(comment) === userId ||
-            getAuthorId(activeCommentPost.authorId) === userId)
+          (getCommentUserId(comment) === viewerUserId ||
+            getAuthorId(activeCommentPost.authorId) === viewerUserId)
         }
         getCommentAuthorName={(comment) =>
           activeCommentPost
