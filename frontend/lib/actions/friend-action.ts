@@ -11,6 +11,7 @@ import {
   sendFriendRequest,
   unfriendUser,
 } from "../api/friend";
+import { searchUsers } from "../api/auth";
 
 const getErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error) return error.message;
@@ -154,6 +155,48 @@ export const handleGetFriendStatus = async (userId: string) => {
       success: false,
       data: { status: "NONE", requestId: null },
       message: getErrorMessage(error, "Get friend status action failed"),
+    };
+  }
+};
+
+export const handleGetMyFriends = async (page = 1, size = 100) => {
+  try {
+    const usersResponse = await searchUsers(undefined, page, size);
+    if (!usersResponse.success) {
+      return {
+        success: false,
+        data: [],
+        message: usersResponse.message || "Failed to fetch users",
+      };
+    }
+
+    const users = usersResponse.data || [];
+    const statuses = await Promise.all(
+      users.map(async (user) => {
+        if (!user?._id) return null;
+        const statusResponse = await getFriendStatus(user._id);
+        if (!statusResponse?.success) return null;
+        return {
+          user,
+          status: statusResponse.data?.status || "NONE",
+        };
+      })
+    );
+
+    const friends = statuses
+      .filter((item) => item && item.status === "FRIEND")
+      .map((item) => item!.user);
+
+    return {
+      success: true,
+      data: friends,
+      message: "Friends fetched successfully",
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      data: [],
+      message: getErrorMessage(error, "Get friends action failed"),
     };
   }
 };

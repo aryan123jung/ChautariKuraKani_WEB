@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   handleAcceptFriendRequest,
+  handleGetMyFriends,
   handleGetIncomingFriendRequests,
   handleGetOutgoingFriendRequests,
   handleRejectFriendRequest,
   handleCancelFriendRequest,
 } from "@/lib/actions/friend-action";
 import { toast } from "react-toastify";
+import FriendsModal from "./_components/FriendsModal";
 
 type FriendUser = {
   _id?: string;
@@ -41,15 +43,18 @@ const profileImageUrl = (profileUrl?: string) => {
 export default function FriendsPage() {
   const [incomingRequests, setIncomingRequests] = useState<FriendRequestItem[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequestItem[]>([]);
+  const [friends, setFriends] = useState<FriendUser[]>([]);
+  const [isFriendsModalOpen, setIsFriendsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
 
   const loadRequests = async () => {
     setIsLoading(true);
     try {
-      const [incomingRes, outgoingRes] = await Promise.all([
+      const [incomingRes, outgoingRes, friendsRes] = await Promise.all([
         handleGetIncomingFriendRequests(1, 20),
         handleGetOutgoingFriendRequests(1, 20),
+        handleGetMyFriends(1, 120),
       ]);
 
       if (incomingRes.success) {
@@ -57,6 +62,9 @@ export default function FriendsPage() {
       }
       if (outgoingRes.success) {
         setOutgoingRequests((outgoingRes.data || []) as FriendRequestItem[]);
+      }
+      if (friendsRes.success) {
+        setFriends((friendsRes.data || []) as FriendUser[]);
       }
     } finally {
       setIsLoading(false);
@@ -228,7 +236,69 @@ export default function FriendsPage() {
           Loading friend requests...
         </div>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-zinc-100">My Friends</h2>
+              <div className="flex items-center gap-2">
+                {friends.length > 3 && (
+                  <button
+                    onClick={() => setIsFriendsModalOpen(true)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  >
+                    View all
+                  </button>
+                )}
+                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700 dark:bg-zinc-800 dark:text-zinc-300">
+                  {friends.length}
+                </span>
+              </div>
+            </div>
+
+            {friends.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">
+                No friends yet. Accept requests to build your list.
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {friends.slice(0, 3).map((friend) => {
+                  const friendName = `${friend.firstName || ""} ${friend.lastName || ""}`.trim() || friend.username || "User";
+                  const image = profileImageUrl(friend.profileUrl);
+
+                  return (
+                    <Link
+                      key={friend._id || friend.username || friendName}
+                      href={friend._id ? `/user/profile/${friend._id}` : "#"}
+                      className="rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
+                          {image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={image} alt={friendName} className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-700 dark:text-zinc-200">
+                              {friendName.slice(0, 1).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                            {friendName}
+                          </p>
+                          <p className="truncate text-xs text-slate-500 dark:text-zinc-400">
+                            @{friend.username || "unknown"}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-slate-900 dark:text-zinc-100">Incoming</h2>
@@ -266,8 +336,15 @@ export default function FriendsPage() {
               )
             )}
           </div>
+          </div>
         </div>
       )}
+
+      <FriendsModal
+        isOpen={isFriendsModalOpen}
+        onClose={() => setIsFriendsModalOpen(false)}
+        friends={friends}
+      />
     </section>
   );
 }
