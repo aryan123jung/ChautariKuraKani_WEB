@@ -2,6 +2,7 @@ import { UserService } from "../services/user.services";
 import { Request, Response } from "express";
 import z, { success } from "zod";
 import { CreateUserDto, LoginUserDto, UpdateUserDto } from "../dtos/user.dtos";
+import { QueryParams } from "../types/query.type";
 
 let userService = new UserService();
 export class AuthController {
@@ -88,6 +89,33 @@ export class AuthController {
             return res.status(error.statusCode || 500).json(
                 { success: false, message: error.message || "Internal Server Error" }
             )
+        }
+    }
+
+    async searchUsers(req: Request, res: Response) {
+        try {
+            const currentUserId = req.user?._id?.toString();
+            if (!currentUserId) {
+                return res.status(400).json(
+                    { success: false, message: "User ID not provided" }
+                );
+            }
+
+            const { page, size, search }: QueryParams = req.query;
+            const { users, pagination } = await userService.searchUsersForUser(
+                currentUserId,
+                page,
+                size,
+                search
+            );
+
+            return res.status(200).json(
+                { success: true, data: users, pagination, message: "Users fetched successfully" }
+            );
+        } catch (error: Error | any) {
+            return res.status(error.statusCode || 500).json(
+                { success: false, message: error.message || "Internal Server Error" }
+            );
         }
     }
 

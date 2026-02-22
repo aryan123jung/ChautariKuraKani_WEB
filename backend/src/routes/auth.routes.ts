@@ -10,6 +10,7 @@ router.post("/register", authController.createUser)
 router.post("/login", authController.loginUser)
 
 router.get("/whoami", authorizedMiddleware, authController.getUserById);
+router.get("/users", authorizedMiddleware, authController.searchUsers);
 router.get("/user/:id", authorizedMiddleware, authController.getCurrentUser);
 
 router.put(

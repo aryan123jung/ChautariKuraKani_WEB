@@ -69,6 +69,27 @@ export class UserService {
         return user;
     }
 
+    async searchUsersForUser(currentUserId: string, page?: string, size?: string, search?: string) {
+        const pageNumber = page ? parseInt(page) : 1;
+        const pageSize = size ? parseInt(size) : 10;
+
+        const { users, total } = await userRepository.searchUsersForUser(
+            currentUserId,
+            pageNumber,
+            pageSize,
+            search
+        );
+
+        const pagination = {
+            page: pageNumber,
+            size: pageSize,
+            totalUsers: total,
+            totalPages: Math.ceil(total / pageSize)
+        };
+
+        return { users, pagination };
+    }
+
 
 
     async updateUser(
