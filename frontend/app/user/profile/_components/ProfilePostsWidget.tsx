@@ -69,6 +69,7 @@ export default function ProfilePostsWidget({
   viewerUserId,
   canManagePosts,
   currentUserProfileUrl,
+  profileOwnerProfileUrl,
   posts,
   onPostsChange,
 }: {
@@ -76,6 +77,7 @@ export default function ProfilePostsWidget({
   viewerUserId: string;
   canManagePosts: boolean;
   currentUserProfileUrl?: string;
+  profileOwnerProfileUrl?: string;
   posts: PostItem[];
   onPostsChange: (posts: PostItem[]) => void;
 }) {
@@ -324,9 +326,12 @@ export default function ProfilePostsWidget({
           const state = getState(post);
           const liked = hasCurrentUserLiked(post);
           const comments = post.comments || [];
+          const postAuthorId = getAuthorId(post.authorId);
           const authorImage =
             profileImageUrl(getAuthorImage(post.authorId)) ||
-            profileImageUrl(currentUserProfileUrl || null);
+            (postAuthorId === userId
+              ? profileImageUrl(profileOwnerProfileUrl || null)
+              : null);
 
           return (
             <article

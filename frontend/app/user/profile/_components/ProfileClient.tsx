@@ -66,6 +66,7 @@ export default function ProfileClient({
           viewerUserId={viewerUserId}
           canManagePosts={canManageProfile}
           currentUserProfileUrl={viewerProfileUrl || user.profileUrl}
+          profileOwnerProfileUrl={user.profileUrl}
           posts={posts}
           onPostsChange={setPosts}
         />
