@@ -2,7 +2,9 @@ import mongoose, { Document, Schema } from "mongoose";
 
 export type NotificationType =
   | "FRIEND_REQUEST_SENT"
-  | "FRIEND_REQUEST_ACCEPTED";
+  | "FRIEND_REQUEST_ACCEPTED"
+  | "POST_LIKED"
+  | "POST_COMMENTED";
 
 export interface INotification extends Document {
   _id: mongoose.Types.ObjectId;
@@ -32,7 +34,12 @@ const notificationSchema = new Schema<INotification>(
     },
     type: {
       type: String,
-      enum: ["FRIEND_REQUEST_SENT", "FRIEND_REQUEST_ACCEPTED"],
+      enum: [
+        "FRIEND_REQUEST_SENT",
+        "FRIEND_REQUEST_ACCEPTED",
+        "POST_LIKED",
+        "POST_COMMENTED"
+      ],
       required: true
     },
     entityType: {

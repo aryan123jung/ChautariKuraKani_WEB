@@ -2,8 +2,12 @@ import { HttpError } from "../errors/http-error";
 import { PostRepository } from "../repositories/post.repository";
 import fs from "fs";
 import path from "path";
+import { NotificationService } from "./notification.services";
+import { UserRepository } from "../repositories/user.repository";
 
 const postRepo = new PostRepository();
+const notificationService = new NotificationService();
+const userRepo = new UserRepository();
 
 export class PostService {
   private getAuthorId(post: any): string {
@@ -81,10 +85,33 @@ export class PostService {
   }
 
   async likePost(postId: string, userId: string) {
+    const existingPost = await postRepo.findById(postId);
+    if (!existingPost) {
+      throw new HttpError(404, "Post not found");
+    }
+
+    const postOwnerId = this.getAuthorId(existingPost);
+    const alreadyLiked = (existingPost.likes || []).some(
+      (likedUserId: any) => likedUserId.toString() === userId
+    );
+
     const post = await postRepo.addLike(postId, userId);
     if (!post) {
       throw new HttpError(404, "Post not found");
     }
+
+    if (!alreadyLiked && postOwnerId !== userId) {
+      const actor = await userRepo.getUserById(userId);
+      await notificationService.createNotification(
+        postOwnerId,
+        userId,
+        "POST_LIKED",
+        post._id.toString(),
+        "New Like",
+        `${actor?.firstName || "Someone"} liked your post`
+      );
+    }
+
     return post;
   }
 
@@ -92,6 +119,13 @@ export class PostService {
     if (!text || !text.trim()) {
       throw new HttpError(400, "Comment text is required");
     }
+
+    const existingPost = await postRepo.findById(postId);
+    if (!existingPost) {
+      throw new HttpError(404, "Post not found");
+    }
+
+    const postOwnerId = this.getAuthorId(existingPost);
 
     const post = await postRepo.addComment(postId, {
       userId,
@@ -102,6 +136,23 @@ export class PostService {
     if (!post) {
       throw new HttpError(404, "Post not found");
     }
+
+    if (postOwnerId !== userId) {
+      const actor = await userRepo.getUserById(userId);
+      const cleanComment = text.trim();
+      const preview =
+        cleanComment.length > 60 ? `${cleanComment.slice(0, 57)}...` : cleanComment;
+
+      await notificationService.createNotification(
+        postOwnerId,
+        userId,
+        "POST_COMMENTED",
+        post._id.toString(),
+        "New Comment",
+        `${actor?.firstName || "Someone"} commented: "${preview}"`
+      );
+    }
+
     return post;
   }
 
