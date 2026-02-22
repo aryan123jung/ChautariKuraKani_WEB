@@ -1,11 +1,17 @@
 import { HttpError } from "../errors/http-error";
 import { FriendRequestRepository } from "../repositories/friend-request.repository";
 import { UserRepository } from "../repositories/user.repository";
+import { NotificationService } from "./notification.services";
 
 const friendRequestRepo = new FriendRequestRepository();
 const userRepo = new UserRepository();
+const notificationService = new NotificationService();
 
 export class FriendRequestService {
+  private getDisplayName(userRef: any) {
+    return userRef?.firstName || "Someone";
+  }
+
   private getPagination(page?: string, size?: string) {
     const pageNumber = page ? parseInt(page) : 1;
     const pageSize = size ? parseInt(size) : 10;
@@ -21,6 +27,7 @@ export class FriendRequestService {
     if (!toUser) {
       throw new HttpError(404, "Target user not found");
     }
+    const fromUser = await userRepo.getUserById(fromUserId);
 
     const existingSameDirection = await friendRequestRepo.findOne({
       fromUserId: fromUserId as any,
@@ -52,6 +59,16 @@ export class FriendRequestService {
         reverseDirection._id.toString(),
         "ACCEPTED"
       );
+      if (accepted) {
+        await notificationService.createNotification(
+          toUserId,
+          fromUserId,
+          "FRIEND_REQUEST_ACCEPTED",
+          accepted._id.toString(),
+          "Friend Request Accepted",
+          `${fromUser?.firstName || "Someone"} accepted your friend request`
+        );
+      }
       return {
         request: accepted,
         autoAccepted: true
@@ -68,6 +85,16 @@ export class FriendRequestService {
     });
 
     const fullRequest = await friendRequestRepo.findById(request._id.toString());
+
+    await notificationService.createNotification(
+      toUserId,
+      fromUserId,
+      "FRIEND_REQUEST_SENT",
+      request._id.toString(),
+      "New Friend Request",
+      `${fromUser?.firstName || "Someone"} sent you a friend request`
+    );
+
     return { request: fullRequest, autoAccepted: false };
   }
 
@@ -101,6 +128,18 @@ export class FriendRequestService {
     }
 
     const accepted = await friendRequestRepo.updateStatus(requestId, "ACCEPTED");
+
+    if (accepted) {
+      await notificationService.createNotification(
+        request.fromUserId?._id?.toString?.() || request.fromUserId.toString(),
+        currentUserId,
+        "FRIEND_REQUEST_ACCEPTED",
+        accepted._id.toString(),
+        "Friend Request Accepted",
+        `${this.getDisplayName(request.toUserId)} accepted your friend request`
+      );
+    }
+
     return accepted;
   }
 
