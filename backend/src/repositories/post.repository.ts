@@ -27,12 +27,12 @@ export class PostRepository implements IPostRepository {
 
   async findById(id: string): Promise<IPost | null> {
     return await PostModel.findById(id)
-      .populate("authorId", "firstName lastName email profileImage");
+      .populate("authorId", "firstName lastName email profileUrl profileImage");
   }
 
   async update(id: string, data: Partial<IPost>): Promise<IPost | null> {
     return await PostModel.findByIdAndUpdate(id, data, { new: true })
-      .populate("authorId", "firstName lastName email profileImage");
+      .populate("authorId", "firstName lastName email profileUrl profileImage");
   }
 
   async addLike(id: string, userId: string): Promise<IPost | null> {
@@ -40,7 +40,7 @@ export class PostRepository implements IPostRepository {
       id,
       { $addToSet: { likes: new Types.ObjectId(userId) } },
       { new: true }
-    ).populate("authorId", "firstName lastName email profileImage");
+    ).populate("authorId", "firstName lastName email profileUrl profileImage");
   }
 
   async addComment(id: string, comment: IPostComment): Promise<IPost | null> {
@@ -57,7 +57,7 @@ export class PostRepository implements IPostRepository {
         $inc: { commentsCount: 1 }
       },
       { new: true }
-    ).populate("authorId", "firstName lastName email profileImage");
+    ).populate("authorId", "firstName lastName email profileUrl profileImage");
   }
 
   async removeComment(id: string, commentId: string): Promise<IPost | null> {
@@ -68,7 +68,7 @@ export class PostRepository implements IPostRepository {
         $inc: { commentsCount: -1 }
       },
       { new: true }
-    ).populate("authorId", "firstName lastName email profileImage");
+    ).populate("authorId", "firstName lastName email profileUrl profileImage");
   }
 
   async findAll({ page, size }: { page: number; size: number })
@@ -81,7 +81,7 @@ export class PostRepository implements IPostRepository {
         .sort({ createdAt: -1 }) // newest first (important for feed)
         .skip((page - 1) * size)
         .limit(size)
-        .populate("authorId", "firstName lastName email profileImage"),
+        .populate("authorId", "firstName lastName email profileUrl profileImage"),
       PostModel.countDocuments(filter)
     ]);
 
