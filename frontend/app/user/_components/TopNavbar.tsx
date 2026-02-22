@@ -37,6 +37,7 @@ type FriendUser = {
   lastName?: string;
   username?: string;
   profileUrl?: string;
+  profileImage?: string;
 };
 
 type IncomingFriendRequest = {
@@ -50,8 +51,12 @@ type IncomingFriendRequest = {
 type NotificationItem = {
   _id: string;
   actorUserId?: string | FriendUser;
-  type: "FRIEND_REQUEST_SENT" | "FRIEND_REQUEST_ACCEPTED";
-  entityType?: "friend_request";
+  type:
+    | "FRIEND_REQUEST_SENT"
+    | "FRIEND_REQUEST_ACCEPTED"
+    | "POST_LIKED"
+    | "POST_COMMENTED";
+  entityType?: string;
   entityId?: string;
   title: string;
   message: string;
@@ -652,7 +657,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
                       {notifications.map((notification) => {
                         const actor = getNotificationActor(notification);
                         const actorName = `${actor?.firstName || ""} ${actor?.lastName || ""}`.trim() || actor?.username || "User";
-                        const actorImage = profileImageUrl(actor?.profileUrl);
+                        const actorImage = profileImageUrl(actor?.profileUrl || actor?.profileImage);
 
                         return (
                           <button
