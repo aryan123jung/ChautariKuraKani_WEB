@@ -20,6 +20,21 @@ export const API = {
         UPDATE: (postId: string) => `/api/post/${postId}`,
         DELETE: (postId: string) => `/api/post/${postId}`,
     },
+    Friends: {
+        SEND_REQUEST: (toUserId: string) => `/api/friends/requests/${toUserId}`,
+        CANCEL_REQUEST: (toUserId: string) => `/api/friends/requests/${toUserId}`,
+        INCOMING_REQUESTS: "/api/friends/requests/incoming",
+        OUTGOING_REQUESTS: "/api/friends/requests/outgoing",
+        ACCEPT_REQUEST: (requestId: string) => `/api/friends/requests/${requestId}/accept`,
+        REJECT_REQUEST: (requestId: string) => `/api/friends/requests/${requestId}/reject`,
+        UNFRIEND: (friendUserId: string) => `/api/friends/${friendUserId}`,
+        STATUS: (userId: string) => `/api/friends/status/${userId}`,
+    },
+    Notifications: {
+        ALL: "/api/notifications",
+        MARK_READ: (notificationId: string) => `/api/notifications/${notificationId}/read`,
+        MARK_ALL_READ: "/api/notifications/read-all",
+    },
     ADMIN:{
         USER:{
             CREATE: '/api/admin/users',
