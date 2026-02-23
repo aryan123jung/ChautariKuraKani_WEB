@@ -9,6 +9,7 @@ import { HttpError } from './errors/http-error';
 import postRoutes from './routes/post.routes';
 import friendRequestRoutes from './routes/friend-request.routes';
 import notificationRoutes from './routes/notification.routes';
+import messageRoutes from './routes/message.routes';
 
 dotenv.config();
 console.log(process.env.PORT);
@@ -29,6 +30,7 @@ app.use('/api/admin/users',adminUserRoutes);
 app.use('/api/post',postRoutes)
 app.use('/api/friends', friendRequestRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/messages', messageRoutes);
 
 
 app.use((err: Error, req: Request, res: Response, next: Function) => {

@@ -3,6 +3,7 @@ import http from "http";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../configs";
 import { setNotificationEmitter } from "./notification-emitter";
+import { setMessageEmitter } from "./message-emitter";
 
 let io: Server | null = null;
 
@@ -52,11 +53,30 @@ export const initSocket = (server: http.Server) => {
     if (userId) {
       socket.join(`user:${userId}`);
     }
+
+    socket.on("conversation:join", (conversationId: string) => {
+      if (typeof conversationId === "string" && conversationId.trim()) {
+        socket.join(`conversation:${conversationId.trim()}`);
+      }
+    });
+
+    socket.on("conversation:leave", (conversationId: string) => {
+      if (typeof conversationId === "string" && conversationId.trim()) {
+        socket.leave(`conversation:${conversationId.trim()}`);
+      }
+    });
   });
 
   setNotificationEmitter((userId, notification) => {
     if (!io) return;
     io.to(`user:${userId}`).emit("notification:new", notification);
+  });
+
+  setMessageEmitter(({ senderId, receiverId, conversationId, message }) => {
+    if (!io) return;
+    io.to(`user:${senderId}`).emit("message:new", message);
+    io.to(`user:${receiverId}`).emit("message:new", message);
+    io.to(`conversation:${conversationId}`).emit("message:new", message);
   });
 
   return io;
