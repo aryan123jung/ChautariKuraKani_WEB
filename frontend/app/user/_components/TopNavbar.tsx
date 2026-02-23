@@ -109,6 +109,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
   const requestIdRef = useRef(0);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const notificationAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window === "undefined") return "light";
@@ -152,6 +153,14 @@ export default function TopNavbar({ onMenuClick }: Props) {
     if (!profileUrl) return null;
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6060";
     return `${backendUrl}/uploads/profile/${profileUrl}`;
+  };
+
+  const playNotificationSound = () => {
+    const audio = notificationAudioRef.current;
+    if (!audio) return;
+
+    audio.currentTime = 0;
+    void audio.play().catch(() => null);
   };
 
   const fetchNotificationCenter = async () => {
@@ -402,6 +411,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
         return [notification, ...prev];
       });
 
+      playNotificationSound();
       toast.info(notification.message || notification.title || "New notification");
 
       if (notification.type === "FRIEND_REQUEST_SENT") {
@@ -443,6 +453,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
         return [nextItem, ...deduped].slice(0, 25);
       });
 
+      playNotificationSound();
       toast.info(`${senderName}: ${message.text || "sent a message"}`);
     });
 
@@ -857,6 +868,12 @@ export default function TopNavbar({ onMenuClick }: Props) {
           )}
         </div>
       </div>
+      <audio
+        ref={notificationAudioRef}
+        src="/sounds/notification.mp3"
+        preload="auto"
+        className="hidden"
+      />
     </header>
   );
 }

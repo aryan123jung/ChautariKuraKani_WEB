@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
+import { createPortal } from "react-dom";
 import type { PostItem } from "../schema";
 
 type CommentType = NonNullable<PostItem["comments"]>[number];
@@ -30,11 +32,24 @@ export default function CommentsModal({
   getCommentAvatarUrl: (comment: CommentType) => string | null;
   isBusy: boolean;
 }) {
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (!isOpen) return;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-2xl overflow-hidden rounded-2xl bg-white dark:bg-zinc-950 shadow-2xl border border-slate-200 dark:border-zinc-800">
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
+  if (!isOpen || typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[120] p-4">
+      <div className="absolute inset-0 bg-black/65 backdrop-blur-sm" />
+      <div className="relative flex h-full items-center justify-center">
+        <div className="w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950">
         <div className="flex items-center justify-between border-b border-slate-200 dark:border-zinc-800 px-5 py-4">
           <h3 className="text-lg font-semibold text-slate-900 dark:text-zinc-100">Comments</h3>
           <button
@@ -120,7 +135,9 @@ export default function CommentsModal({
             </button>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
