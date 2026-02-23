@@ -42,11 +42,19 @@
 import { useState } from "react";
 import HomeFeed from "./HomeFeed";
 import FriendsFeed from "./FriendsFeed";
+import type { PostItem } from "@/app/user/profile/schema";
 
-type UserData = { firstName: string; lastName: string; profileUrl?: string };
-
-export default function FeedToggle({ user }: { user: UserData }) {
+export default function FeedToggle({
+  currentUserId,
+  posts,
+  friendIds,
+}: {
+  currentUserId: string;
+  posts: PostItem[];
+  friendIds: string[];
+}) {
   const [feed, setFeed] = useState<"home" | "friends">("home");
+  const [feedPosts, setFeedPosts] = useState<PostItem[]>(posts);
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -66,7 +74,20 @@ export default function FeedToggle({ user }: { user: UserData }) {
       </div>
 
       <div className="scrollbar-feed flex-1 min-h-0 overflow-y-auto pr-1">
-        {feed === "home" ? <HomeFeed user={user} /> : <FriendsFeed user={user} />}
+        {feed === "home" ? (
+          <HomeFeed
+            currentUserId={currentUserId}
+            posts={feedPosts}
+            onPostsChange={setFeedPosts}
+          />
+        ) : (
+          <FriendsFeed
+            viewerUserId={currentUserId}
+            friendIds={friendIds}
+            posts={feedPosts}
+            onPostsChange={setFeedPosts}
+          />
+        )}
       </div>
     </div>
   );

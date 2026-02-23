@@ -56,10 +56,8 @@ export default function FriendsModal({ isOpen, onClose, friends }: FriendsModalP
                   const image = profileImageUrl(friend.profileUrl);
 
                   return (
-                    <Link
+                    <div
                       key={friend._id || friend.username || friendName}
-                      href={friend._id ? `/user/profile/${friend._id}` : "#"}
-                      onClick={onClose}
                       className="rounded-xl border border-slate-200 bg-slate-50 p-3 transition hover:-translate-y-0.5 hover:shadow-sm dark:border-zinc-700 dark:bg-zinc-900"
                     >
                       <div className="flex items-center gap-3">
@@ -74,15 +72,28 @@ export default function FriendsModal({ isOpen, onClose, friends }: FriendsModalP
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                          <Link
+                            href={friend._id ? `/user/profile/${friend._id}` : "#"}
+                            onClick={onClose}
+                            className="truncate text-sm font-semibold text-slate-900 hover:underline dark:text-zinc-100"
+                          >
                             {friendName}
-                          </p>
+                          </Link>
                           <p className="truncate text-xs text-slate-500 dark:text-zinc-400">
                             @{friend.username || "unknown"}
                           </p>
+                          <div className="mt-2">
+                            <Link
+                              href={friend._id ? `/user/message?userId=${friend._id}` : "#"}
+                              onClick={onClose}
+                              className="rounded-md border border-slate-300 px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                            >
+                              Message
+                            </Link>
+                          </div>
                         </div>
                       </div>
-                    </Link>
+                    </div>
                   );
                 })}
               </div>

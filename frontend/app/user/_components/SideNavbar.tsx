@@ -66,7 +66,17 @@ export default function SideNavbar({ open, onClose, user }: Props) {
             <li><Link href="/user/settings" className={sidebarLinkClass("/user/settings")}>Settings</Link></li>
             <li><Link href="/user/friends" className={sidebarLinkClass("/user/friends")}>Friends</Link></li>
             <li><Link href="/user/chautari" className={sidebarLinkClass("/user/chautari")}>Chautari</Link></li>
-            <li><Link href="/user/notification" className={sidebarLinkClass("/user/notification")}>Notification</Link></li>
+            <li>
+              <button
+                onClick={() => {
+                  window.dispatchEvent(new Event("open-notifications-modal"));
+                  onClose();
+                }}
+                className="text-black dark:text-zinc-200 hover:text-green-600 hover:underline transition-colors block px-3 py-2 rounded-md w-full text-left"
+              >
+                Notification
+              </button>
+            </li>
             <li><Link href="/user/message" className={sidebarLinkClass("/user/message")}>Messages</Link></li>
             <li><Link href="/user/help" className={sidebarLinkClass("/user/help")}>Help</Link></li>
           </ul>

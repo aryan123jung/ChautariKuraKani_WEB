@@ -291,10 +291,28 @@ import { getUserData } from "@/lib/cookie";
 import LeftSidebar from "./_components/LeftSidebar";
 import RightSidebar from "./_components/RightSidebar";
 import FeedToggle from "./_components/FeedToggle";
+import { handleGetAllPosts } from "@/lib/actions/post-action";
+import { handleGetMyFriends } from "@/lib/actions/friend-action";
+import type { PostItem } from "../profile/schema";
 
 export default async function HomePage() {
   const user = await getUserData();
   if (!user) return null;
+
+  const [postsResponse, friendsResponse] = await Promise.all([
+    handleGetAllPosts(1, 200),
+    handleGetMyFriends(1, 200),
+  ]);
+
+  const posts: PostItem[] = postsResponse.success
+    ? ((postsResponse.data as PostItem[]) || [])
+    : [];
+
+  const friendIds = friendsResponse.success
+    ? (friendsResponse.data || [])
+        .map((friend) => friend?._id)
+        .filter((id): id is string => Boolean(id))
+    : [];
 
   return (
     <div className="flex h-[calc(100vh-80px)] overflow-hidden gap-4 p-4">
@@ -305,7 +323,11 @@ export default async function HomePage() {
 
       {/* Main feed */}
       <main className="flex-1 min-h-0 overflow-hidden">
-        <FeedToggle user={user} />
+        <FeedToggle
+          currentUserId={user.id || user._id}
+          posts={posts}
+          friendIds={friendIds}
+        />
       </main>
 
       {/* Right sidebar */}

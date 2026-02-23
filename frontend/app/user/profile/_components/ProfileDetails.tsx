@@ -26,6 +26,7 @@ export default function ProfileDetails({
   onAcceptRequest,
   onRejectRequest,
   onUnfriend,
+  onMessage,
 }: {
   user: ProfileUser;
   onEdit?: () => void;
@@ -38,6 +39,7 @@ export default function ProfileDetails({
   onAcceptRequest?: () => void;
   onRejectRequest?: () => void;
   onUnfriend?: () => void;
+  onMessage?: () => void;
 }) {
   const renderFriendActions = () => {
     if (friendStatus === "PENDING_INCOMING") {
@@ -75,13 +77,21 @@ export default function ProfileDetails({
 
     if (friendStatus === "FRIEND") {
       return (
-        <button
-          onClick={onUnfriend}
-          disabled={isFriendActionBusy}
-          className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
-        >
-          Friends
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={onMessage}
+            className="rounded-xl bg-[#76C05D] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#67a94f]"
+          >
+            Message
+          </button>
+          <button
+            onClick={onUnfriend}
+            disabled={isFriendActionBusy}
+            className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:opacity-60"
+          >
+            Friends
+          </button>
+        </div>
       );
     }
 

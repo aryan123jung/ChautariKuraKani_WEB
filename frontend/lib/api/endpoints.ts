@@ -35,6 +35,14 @@ export const API = {
         MARK_READ: (notificationId: string) => `/api/notifications/${notificationId}/read`,
         MARK_ALL_READ: "/api/notifications/read-all",
     },
+    Messages: {
+        GET_OR_CREATE_CONVERSATION: (otherUserId: string) =>
+            `/api/messages/conversations/${otherUserId}`,
+        LIST_CONVERSATIONS: "/api/messages/conversations",
+        LIST_MESSAGES: (conversationId: string) => `/api/messages/${conversationId}`,
+        SEND_MESSAGE: (conversationId: string) => `/api/messages/${conversationId}`,
+        MARK_READ: (conversationId: string) => `/api/messages/${conversationId}/read`,
+    },
     ADMIN:{
         USER:{
             CREATE: '/api/admin/users',

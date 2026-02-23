@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ProfileDetails from "./ProfileDetails";
 import EditProfileForm from "./EditProfileForm";
 import AddPostModal from "./AddPostModal";
@@ -47,6 +48,7 @@ export default function ProfileClient({
   currentUserId?: string;
   viewerProfileUrl?: string;
 }) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isAddPostOpen, setIsAddPostOpen] = useState(false);
   const [posts, setPosts] = useState<PostItem[]>(user.initialPosts || []);
@@ -134,6 +136,10 @@ export default function ProfileClient({
           onUnfriend={() =>
             void withFriendAction(() => handleUnfriendUser(profileUserId))
           }
+          onMessage={() => {
+            if (!profileUserId) return;
+            router.push(`/user/message?userId=${profileUserId}`);
+          }}
         />
       ) : (
         <EditProfileForm user={user} onCancel={() => setIsEditing(false)} />

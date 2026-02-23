@@ -64,6 +64,43 @@ type NotificationItem = {
   createdAt?: string;
 };
 
+type MessageEvent = {
+  _id: string;
+  text?: string;
+  senderId?: string | FriendUser;
+  conversationId?: string;
+  createdAt?: string;
+};
+
+type MessageAlertItem = {
+  id: string;
+  senderName: string;
+  senderAvatar?: string | null;
+  text: string;
+  conversationId?: string;
+  isRead: boolean;
+  createdAt?: string;
+};
+
+const getAuthTokenFromCookie = () => {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|; )auth_token=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
+const getCurrentUserIdFromCookie = () => {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|; )user_data=([^;]+)/);
+  if (!match) return null;
+
+  try {
+    const user = JSON.parse(decodeURIComponent(match[1]));
+    return user?.id || user?._id || null;
+  } catch {
+    return null;
+  }
+};
+
 export default function TopNavbar({ onMenuClick }: Props) {
   const pathname = usePathname();
   const router = useRouter();
@@ -92,6 +129,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [incomingRequests, setIncomingRequests] = useState<IncomingFriendRequest[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [messageAlerts, setMessageAlerts] = useState<MessageAlertItem[]>([]);
   const [isNotificationLoading, setIsNotificationLoading] = useState(false);
   const [activeNotificationRequestId, setActiveNotificationRequestId] = useState<string | null>(null);
   const [activeNotificationId, setActiveNotificationId] = useState<string | null>(null);
@@ -109,6 +147,36 @@ export default function TopNavbar({ onMenuClick }: Props) {
             ? "text-zinc-300 hover:text-zinc-100 hover:border-b-2 hover:border-emerald-500"
             : "text-gray-700 hover:text-gray-900 hover:border-b-2 hover:border-green-600"
         }`;
+
+  const profileImageUrl = (profileUrl?: string | null) => {
+    if (!profileUrl) return null;
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6060";
+    return `${backendUrl}/uploads/profile/${profileUrl}`;
+  };
+
+  const fetchNotificationCenter = async () => {
+    setIsNotificationLoading(true);
+    try {
+      const [incomingResponse, notificationsResponse] = await Promise.all([
+        handleGetIncomingFriendRequests(1, 20),
+        handleGetNotifications(1, 25),
+      ]);
+
+      setIncomingRequests(
+        incomingResponse.success
+          ? ((incomingResponse.data || []) as IncomingFriendRequest[])
+          : []
+      );
+
+      setNotifications(
+        notificationsResponse.success
+          ? ((notificationsResponse.data || []) as NotificationItem[])
+          : []
+      );
+    } finally {
+      setIsNotificationLoading(false);
+    }
+  };
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark");
@@ -142,38 +210,24 @@ export default function TopNavbar({ onMenuClick }: Props) {
     []
   );
 
-  const fetchNotificationCenter = async () => {
-    setIsNotificationLoading(true);
-    try {
-      const [incomingResponse, notificationsResponse] = await Promise.all([
-        handleGetIncomingFriendRequests(1, 20),
-        handleGetNotifications(1, 25),
-      ]);
-
-      setIncomingRequests(
-        incomingResponse.success
-          ? ((incomingResponse.data || []) as IncomingFriendRequest[])
-          : []
-      );
-
-      setNotifications(
-        notificationsResponse.success
-          ? ((notificationsResponse.data || []) as NotificationItem[])
-          : []
-      );
-    } finally {
-      setIsNotificationLoading(false);
-    }
-  };
-
   useEffect(() => {
     void fetchNotificationCenter();
     const interval = setInterval(() => {
       void fetchNotificationCenter();
     }, 30000);
 
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const openNotifications = () => {
+      setIsNotificationOpen(true);
+      void fetchNotificationCenter();
+    };
+
+    window.addEventListener("open-notifications-modal", openNotifications);
     return () => {
-      clearInterval(interval);
+      window.removeEventListener("open-notifications-modal", openNotifications);
     };
   }, []);
 
@@ -204,10 +258,6 @@ export default function TopNavbar({ onMenuClick }: Props) {
     }, 350);
   };
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "dark" ? "light" : "dark"));
-  };
-
   const onSelectUser = (user: SearchUser) => {
     setSearchTerm(
       user.username
@@ -223,23 +273,8 @@ export default function TopNavbar({ onMenuClick }: Props) {
     return fullName || user.username || "User";
   };
 
-  const profileImageUrl = (profileUrl?: string) => {
-    if (!profileUrl) return null;
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6060";
-    return `${backendUrl}/uploads/profile/${profileUrl}`;
-  };
-
-  const getAuthTokenFromCookie = () => {
-    if (typeof document === "undefined") return null;
-    const match = document.cookie.match(/(?:^|; )auth_token=([^;]+)/);
-    return match ? decodeURIComponent(match[1]) : null;
-  };
-
   const getRequestSender = (request: IncomingFriendRequest) => {
-    if (!request.fromUserId || typeof request.fromUserId === "string") {
-      return null;
-    }
-
+    if (!request.fromUserId || typeof request.fromUserId === "string") return null;
     return request.fromUserId;
   };
 
@@ -247,7 +282,6 @@ export default function TopNavbar({ onMenuClick }: Props) {
     if (!notification.actorUserId || typeof notification.actorUserId === "string") {
       return null;
     }
-
     return notification.actorUserId;
   };
 
@@ -324,6 +358,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
       }
 
       setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+      setMessageAlerts((prev) => prev.map((item) => ({ ...item, isRead: true })));
       toast.success(response.message || "All notifications marked as read");
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to mark all as read");
@@ -332,7 +367,22 @@ export default function TopNavbar({ onMenuClick }: Props) {
     }
   };
 
-  const unreadCount = notifications.filter((notification) => !notification.isRead).length;
+  const onOpenMessageAlert = (alertId: string, conversationId?: string) => {
+    setMessageAlerts((prev) =>
+      prev.map((item) => (item.id === alertId ? { ...item, isRead: true } : item))
+    );
+
+    if (conversationId) {
+      router.push(`/user/message?conversationId=${conversationId}`);
+      return;
+    }
+
+    router.push("/user/message");
+  };
+
+  const unreadCount =
+    notifications.filter((notification) => !notification.isRead).length +
+    messageAlerts.filter((item) => !item.isRead).length;
 
   useEffect(() => {
     const token = getAuthTokenFromCookie();
@@ -348,9 +398,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
 
     socket.on("notification:new", (notification: NotificationItem) => {
       setNotifications((prev) => {
-        if (prev.some((item) => item._id === notification._id)) {
-          return prev;
-        }
+        if (prev.some((item) => item._id === notification._id)) return prev;
         return [notification, ...prev];
       });
 
@@ -361,14 +409,52 @@ export default function TopNavbar({ onMenuClick }: Props) {
       }
     });
 
+    socket.on("message:new", (message: MessageEvent) => {
+      const currentUserId = getCurrentUserIdFromCookie();
+      const senderId =
+        message.senderId && typeof message.senderId !== "string"
+          ? message.senderId._id
+          : message.senderId;
+
+      if (pathname.startsWith("/user/message")) return;
+      if (currentUserId && senderId && currentUserId === senderId) return;
+
+      const sender =
+        message.senderId && typeof message.senderId !== "string"
+          ? message.senderId
+          : null;
+      const senderName =
+        `${sender?.firstName || ""} ${sender?.lastName || ""}`.trim() ||
+        sender?.username ||
+        "Someone";
+
+      setMessageAlerts((prev) => {
+        const nextItem: MessageAlertItem = {
+          id: `message-${message._id}`,
+          senderName,
+          senderAvatar: sender?.profileUrl || sender?.profileImage || null,
+          text: message.text || "sent a message",
+          conversationId: message.conversationId,
+          isRead: false,
+          createdAt: message.createdAt,
+        };
+
+        const deduped = prev.filter((item) => item.id !== nextItem.id);
+        return [nextItem, ...deduped].slice(0, 25);
+      });
+
+      toast.info(`${senderName}: ${message.text || "sent a message"}`);
+    });
+
     socketRef.current = socket;
 
     return () => {
       socket.off("notification:new");
+      socket.off("message:new");
       socket.disconnect();
       socketRef.current = null;
     };
-  }, []);
+  }, [pathname]);
 
   return (
     <header
@@ -501,11 +587,16 @@ export default function TopNavbar({ onMenuClick }: Props) {
                 Chautari
               </Link>
             </li>
+            <li>
+              <Link href="/user/message" className={linkClass("/user/message")}>
+                Messages
+              </Link>
+            </li>
           </ul>
         </nav>
 
         <button
-          onClick={toggleTheme}
+          onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
           className={`rounded-full p-2 transition ${
             theme === "dark"
               ? "bg-zinc-800 text-amber-300 hover:bg-zinc-700"
@@ -521,9 +612,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
             onClick={() => {
               const next = !isNotificationOpen;
               setIsNotificationOpen(next);
-              if (next) {
-                void fetchNotificationCenter();
-              }
+              if (next) void fetchNotificationCenter();
             }}
             className={`relative rounded-full p-1 transition ${
               theme === "dark" ? "hover:bg-zinc-800" : "hover:bg-gray-100"
@@ -571,6 +660,56 @@ export default function TopNavbar({ onMenuClick }: Props) {
                   </p>
                 )}
 
+                {!isNotificationLoading && messageAlerts.length > 0 && (
+                  <div className={`border-b px-4 py-3 ${theme === "dark" ? "border-zinc-800" : "border-gray-100"}`}>
+                    <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${theme === "dark" ? "text-zinc-400" : "text-gray-500"}`}>
+                      New Messages
+                    </p>
+                    <div className="space-y-2">
+                      {messageAlerts.map((alert) => {
+                        const avatar = profileImageUrl(alert.senderAvatar || null);
+                        return (
+                          <button
+                            key={alert.id}
+                            onClick={() => onOpenMessageAlert(alert.id, alert.conversationId)}
+                            className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                              alert.isRead
+                                ? theme === "dark"
+                                  ? "border-zinc-800 bg-zinc-900"
+                                  : "border-gray-200 bg-white"
+                                : theme === "dark"
+                                  ? "border-emerald-700/40 bg-zinc-800"
+                                  : "border-green-200 bg-green-50"
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className="h-8 w-8 overflow-hidden rounded-full bg-gray-300 dark:bg-zinc-700">
+                                {avatar ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={avatar} alt={alert.senderName} className="h-full w-full object-cover" />
+                                ) : (
+                                  <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+                                    {alert.senderName.slice(0, 1).toUpperCase()}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className={`truncate text-sm font-semibold ${theme === "dark" ? "text-zinc-100" : "text-gray-900"}`}>
+                                  {alert.senderName}
+                                </p>
+                                <p className={`line-clamp-2 text-xs ${theme === "dark" ? "text-zinc-400" : "text-gray-600"}`}>
+                                  {alert.text}
+                                </p>
+                              </div>
+                              {!alert.isRead && <span className="mt-1 h-2 w-2 rounded-full bg-green-600" />}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 {!isNotificationLoading && incomingRequests.length > 0 && (
                   <div className={`border-b px-4 py-3 ${theme === "dark" ? "border-zinc-800" : "border-gray-100"}`}>
                     <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${theme === "dark" ? "text-zinc-400" : "text-gray-500"}`}>
@@ -580,7 +719,7 @@ export default function TopNavbar({ onMenuClick }: Props) {
                       {incomingRequests.map((request) => {
                         const sender = getRequestSender(request);
                         const senderName = `${sender?.firstName || ""} ${sender?.lastName || ""}`.trim() || sender?.username || "User";
-                        const senderImage = profileImageUrl(sender?.profileUrl);
+                        const senderImage = profileImageUrl(sender?.profileUrl || sender?.profileImage);
 
                         return (
                           <div key={request._id} className="flex items-start gap-3">
@@ -642,12 +781,6 @@ export default function TopNavbar({ onMenuClick }: Props) {
                   </div>
                 )}
 
-                {!isNotificationLoading && notifications.length === 0 && incomingRequests.length === 0 && (
-                  <p className={`px-4 py-6 text-sm ${theme === "dark" ? "text-zinc-400" : "text-gray-500"}`}>
-                    No notifications.
-                  </p>
-                )}
-
                 {!isNotificationLoading && notifications.length > 0 && (
                   <div className="px-4 py-3">
                     <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${theme === "dark" ? "text-zinc-400" : "text-gray-500"}`}>
@@ -663,12 +796,8 @@ export default function TopNavbar({ onMenuClick }: Props) {
                           <button
                             key={notification._id}
                             onClick={() => {
-                              if (!notification.isRead) {
-                                void onMarkRead(notification._id);
-                              }
-                              if (actor?._id) {
-                                router.push(`/user/profile/${actor._id}`);
-                              }
+                              if (!notification.isRead) void onMarkRead(notification._id);
+                              if (actor?._id) router.push(`/user/profile/${actor._id}`);
                             }}
                             className={`w-full rounded-lg border px-3 py-2 text-left transition ${
                               notification.isRead
@@ -699,15 +828,19 @@ export default function TopNavbar({ onMenuClick }: Props) {
                                   {notification.message}
                                 </p>
                               </div>
-                              {!notification.isRead && (
-                                <span className="mt-1 h-2 w-2 rounded-full bg-green-600" />
-                              )}
+                              {!notification.isRead && <span className="mt-1 h-2 w-2 rounded-full bg-green-600" />}
                             </div>
                           </button>
                         );
                       })}
                     </div>
                   </div>
+                )}
+
+                {!isNotificationLoading && notifications.length === 0 && incomingRequests.length === 0 && messageAlerts.length === 0 && (
+                  <p className={`px-4 py-6 text-sm ${theme === "dark" ? "text-zinc-400" : "text-gray-500"}`}>
+                    No notifications.
+                  </p>
                 )}
               </div>
 
