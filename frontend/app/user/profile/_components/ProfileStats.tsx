@@ -1,10 +1,19 @@
 import type { PostItem } from "../schema";
 
-function StatCard({ label, value }: { label: string; value: string }) {
+function StatCard({
+  label,
+  value,
+  helper,
+}: {
+  label: string;
+  value: string;
+  helper?: string;
+}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-      <p className="text-xs uppercase tracking-wide text-slate-500">{label}</p>
-      <p className="mt-1 text-base font-semibold text-slate-900">{value}</p>
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:bg-slate-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800">
+      <p className="text-xs uppercase tracking-wide text-slate-500 dark:text-zinc-400">{label}</p>
+      <p className="mt-1 text-xl font-semibold text-slate-900 dark:text-zinc-100">{value}</p>
+      {helper && <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400">{helper}</p>}
     </div>
   );
 }
@@ -12,6 +21,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
 export default function ProfileStats({
   user,
   posts,
+  friendsCount,
 }: {
   user: {
     role?: string;
@@ -21,6 +31,7 @@ export default function ProfileStats({
     id?: string;
   };
   posts: PostItem[];
+  friendsCount?: number | null;
 }) {
   const userId = user.id || user._id || "";
   const totalPosts = posts.filter((post) => {
@@ -30,16 +41,25 @@ export default function ProfileStats({
   }).length;
 
   return (
-    <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard label="Role" value={user.role || "User"} />
-      <StatCard label="Posts" value={`${totalPosts}`} />
+    <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <StatCard label="Posts" value={`${totalPosts}`} helper="Shared on your timeline" />
+      <StatCard
+        label="Friends"
+        value={friendsCount == null ? "--" : `${friendsCount}`}
+        helper={friendsCount == null ? "Not available yet" : "Connected friends"}
+      />
+      <StatCard label="Chautari" value="--" helper="Coming soon" />
       <StatCard
         label="Joined"
         value={user.createdAt ? new Date(user.createdAt).toDateString() : "-"}
       />
       <StatCard
-        label="Updated"
+        label="Last Update"
         value={user.updatedAt ? new Date(user.updatedAt).toDateString() : "-"}
+      />
+      <StatCard
+        label="Account"
+        value={user.role || "User"}
       />
     </div>
   );

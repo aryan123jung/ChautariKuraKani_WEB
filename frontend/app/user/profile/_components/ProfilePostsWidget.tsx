@@ -307,7 +307,7 @@ export default function ProfilePostsWidget({
   };
 
   return (
-    <section className="mt-8 rounded-3xl border border-slate-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 p-4 sm:p-6 shadow-sm">
+    <section className="mt-8 rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-lg shadow-slate-200/40 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950/95 dark:shadow-black/40">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold text-slate-900 dark:text-zinc-100">Posts</h2>
         <span className="rounded-full bg-slate-100 dark:bg-zinc-900 px-3 py-1 text-sm text-slate-700 dark:text-zinc-300">

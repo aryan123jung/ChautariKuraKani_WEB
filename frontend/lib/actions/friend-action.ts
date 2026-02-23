@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   acceptFriendRequest,
   cancelFriendRequest,
+  getFriendCount,
   getFriendStatus,
   getIncomingFriendRequests,
   getOutgoingFriendRequests,
@@ -155,6 +156,23 @@ export const handleGetFriendStatus = async (userId: string) => {
       success: false,
       data: { status: "NONE", requestId: null },
       message: getErrorMessage(error, "Get friend status action failed"),
+    };
+  }
+};
+
+export const handleGetFriendCount = async (userId: string) => {
+  try {
+    const response = await getFriendCount(userId);
+    return {
+      success: !!response?.success,
+      data: { count: Number(response?.data?.count || 0) },
+      message: response?.message || "Friend count fetched successfully",
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      data: { count: 0 },
+      message: getErrorMessage(error, "Get friend count action failed"),
     };
   }
 };

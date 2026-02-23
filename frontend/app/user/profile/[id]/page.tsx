@@ -5,7 +5,7 @@ import type { PostItem } from "../schema";
 import ProfileAvatar from "../_components/ProfileAvatar";
 import ProfileClient from "../_components/ProfileClient";
 import ProfileCover from "../_components/ProfileCover";
-import ProfileStats from "../_components/ProfileStats";
+import { handleGetFriendCount } from "@/lib/actions/friend-action";
 
 export default async function PublicProfilePage({
   params,
@@ -66,20 +66,28 @@ export default async function PublicProfilePage({
     id: fetchedUser.id || fetchedUser._id,
     initialPosts,
   };
+  const currentUserId = currentUser?.id || currentUser?._id || "";
+  const profileUserId = profileUser.id || profileUser._id || "";
+  const friendCountResponse = profileUserId
+    ? await handleGetFriendCount(profileUserId)
+    : { success: false, data: { count: 0 } };
+  const friendsCount = friendCountResponse.success
+    ? friendCountResponse.data.count
+    : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-3 pb-10 pt-4 sm:px-6">
-      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div className="mx-auto max-w-6xl px-3 pb-12 pt-4 sm:px-6">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-xl shadow-slate-200/40 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/95 dark:shadow-black/40">
         <ProfileCover coverUrl={profileUser.coverUrl} />
 
-        <div className="relative px-4 pb-6 sm:px-8">
+        <div className="relative px-4 pb-7 sm:px-8">
           <ProfileAvatar profileUrl={profileUser.profileUrl} />
           <ProfileClient
             user={profileUser}
-            currentUserId={currentUser?.id || currentUser?._id}
+            currentUserId={currentUserId}
             viewerProfileUrl={currentUser?.profileUrl}
+            friendsCount={friendsCount || 0}
           />
-          <ProfileStats user={profileUser} posts={initialPosts} />
         </div>
       </div>
     </div>

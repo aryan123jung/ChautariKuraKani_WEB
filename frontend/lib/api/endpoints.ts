@@ -29,6 +29,7 @@ export const API = {
         REJECT_REQUEST: (requestId: string) => `/api/friends/requests/${requestId}/reject`,
         UNFRIEND: (friendUserId: string) => `/api/friends/${friendUserId}`,
         STATUS: (userId: string) => `/api/friends/status/${userId}`,
+        COUNT: (userId: string) => `/api/friends/count/${userId}`,
     },
     Notifications: {
         ALL: "/api/notifications",

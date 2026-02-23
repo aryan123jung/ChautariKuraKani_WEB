@@ -43,10 +43,12 @@ export default function ProfileClient({
   user,
   currentUserId,
   viewerProfileUrl,
+  friendsCount = 0,
 }: {
   user: ProfileUser;
   currentUserId?: string;
   viewerProfileUrl?: string;
+  friendsCount?: number;
 }) {
   const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
@@ -59,6 +61,10 @@ export default function ProfileClient({
   const profileUserId = user.id || user._id || "";
   const viewerUserId = currentUserId || "";
   const canManageProfile = !!viewerUserId && viewerUserId === profileUserId;
+  const postsCount = posts.filter((post) => {
+    const authorId = typeof post.authorId === "string" ? post.authorId : post.authorId?._id || "";
+    return authorId === profileUserId;
+  }).length;
 
   const refreshFriendStatus = useCallback(async () => {
     if (!viewerUserId || !profileUserId || viewerUserId === profileUserId) {
@@ -104,6 +110,8 @@ export default function ProfileClient({
       {!isEditing ? (
         <ProfileDetails
           user={user}
+          postsCount={postsCount}
+          friendsCount={friendsCount}
           onEdit={canManageProfile ? () => setIsEditing(true) : undefined}
           onAddPost={canManageProfile ? () => setIsAddPostOpen(true) : undefined}
           canManageProfile={canManageProfile}

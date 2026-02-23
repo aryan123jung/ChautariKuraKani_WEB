@@ -115,3 +115,12 @@ export const getFriendStatus = async (userId: string) => {
     throw new Error(getErrorMessage(error, "Fetch friend status failed"));
   }
 };
+
+export const getFriendCount = async (userId: string) => {
+  try {
+    const response = await axios.get(API.Friends.COUNT(userId));
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(getErrorMessage(error, "Fetch friend count failed"));
+  }
+};
