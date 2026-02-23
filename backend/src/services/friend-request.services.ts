@@ -243,4 +243,14 @@ export class FriendRequestService {
 
     return { status: "NONE", requestId: null };
   }
+
+  async getFriendCount(userId: string) {
+    const user = await userRepo.getUserById(userId);
+    if (!user) {
+      throw new HttpError(404, "User not found");
+    }
+
+    const count = await friendRequestRepo.countAcceptedFriends(userId);
+    return { count };
+  }
 }

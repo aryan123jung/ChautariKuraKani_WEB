@@ -10,6 +10,7 @@ import postRoutes from './routes/post.routes';
 import friendRequestRoutes from './routes/friend-request.routes';
 import notificationRoutes from './routes/notification.routes';
 import messageRoutes from './routes/message.routes';
+import callRoutes from './routes/call.routes';
 
 dotenv.config();
 console.log(process.env.PORT);
@@ -31,6 +32,7 @@ app.use('/api/post',postRoutes)
 app.use('/api/friends', friendRequestRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/calls', callRoutes);
 
 
 app.use((err: Error, req: Request, res: Response, next: Function) => {

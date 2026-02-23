@@ -193,4 +193,21 @@ export class FriendRequestController {
         .json({ success: false, message: error.message || "Internal Server Error" });
     }
   }
+
+  async getFriendCount(req: Request, res: Response) {
+    try {
+      const userId = req.params.userId;
+      const { count } = await friendRequestService.getFriendCount(userId);
+
+      return res.status(200).json({
+        success: true,
+        data: { count },
+        message: "Friend count fetched successfully"
+      });
+    } catch (error: Error | any) {
+      return res
+        .status(error.statusCode || 500)
+        .json({ success: false, message: error.message || "Internal Server Error" });
+    }
+  }
 }

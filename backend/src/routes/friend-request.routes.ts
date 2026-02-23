@@ -18,5 +18,6 @@ router.post("/requests/:requestId/reject", friendRequestController.rejectRequest
 
 router.delete("/:friendUserId", friendRequestController.unfriend);
 router.get("/status/:userId", friendRequestController.getStatus);
+router.get("/count/:userId", friendRequestController.getFriendCount);
 
 export default router;

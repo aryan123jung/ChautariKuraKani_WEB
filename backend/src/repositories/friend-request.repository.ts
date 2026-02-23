@@ -79,4 +79,11 @@ export class FriendRequestRepository {
       ]
     });
   }
+
+  async countAcceptedFriends(userId: string) {
+    return await FriendRequestModel.countDocuments({
+      status: "ACCEPTED",
+      $or: [{ fromUserId: userId as any }, { toUserId: userId as any }]
+    });
+  }
 }
