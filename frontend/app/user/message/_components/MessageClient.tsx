@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { toast } from "react-toastify";
-import { Send } from "lucide-react";
+import { Phone, Send, Video } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { handleGetMyFriends } from "@/lib/actions/friend-action";
+import CallModal from "./CallModal";
 import {
   handleGetOrCreateConversation,
   handleListConversations,
@@ -48,6 +49,46 @@ type MessageItem = {
   readBy?: string[];
 };
 
+type CallType = "audio" | "video";
+
+type IncomingCall = {
+  callId: string;
+  callerId: string;
+  calleeId: string;
+  callType: CallType;
+};
+
+type OutgoingCall = {
+  callId: string;
+  calleeId: string;
+  callType: CallType;
+};
+
+type ActiveCall = {
+  callId: string;
+  peerUserId: string;
+  callType: CallType;
+  startedAt: number;
+};
+
+type CallOfferPayload = {
+  callId: string;
+  fromUserId: string;
+  offer: RTCSessionDescriptionInit;
+};
+
+type CallAnswerPayload = {
+  callId: string;
+  fromUserId: string;
+  answer: RTCSessionDescriptionInit;
+};
+
+type CallCandidatePayload = {
+  callId: string;
+  fromUserId: string;
+  candidate: RTCIceCandidateInit;
+};
+
 const getUserId = (user: string | MessageUser | FriendUser | undefined) => {
   if (!user) return "";
   if (typeof user === "string") return user;
@@ -76,6 +117,8 @@ const getAuthTokenFromCookie = () => {
   return match ? decodeURIComponent(match[1]) : null;
 };
 
+const CALL_ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
+
 export default function MessageClient({ currentUserId }: { currentUserId: string }) {
   const searchParams = useSearchParams();
   const [friends, setFriends] = useState<FriendUser[]>([]);
@@ -87,8 +130,29 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
+  const [outgoingCall, setOutgoingCall] = useState<OutgoingCall | null>(null);
+  const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
+  const [callSeconds, setCallSeconds] = useState(0);
+  const [isEndingCall, setIsEndingCall] = useState(false);
+
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const localVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
+  const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteStreamRef = useRef<MediaStream | null>(null);
+  const currentCallIdRef = useRef<string | null>(null);
+  const currentPeerUserIdRef = useRef<string | null>(null);
+  const activeConversationIdRef = useRef<string | null>(null);
+  const incomingCallRef = useRef<IncomingCall | null>(null);
+  const outgoingCallRef = useRef<OutgoingCall | null>(null);
+  const activeCallRef = useRef<ActiveCall | null>(null);
+  const friendsRef = useRef<FriendUser[]>([]);
+  const conversationsRef = useRef<ConversationItem[]>([]);
 
   const activeConversation = useMemo(
     () => conversations.find((conversation) => conversation._id === activeConversationId) || null,
@@ -108,12 +172,201 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
 
     return friends.filter((friend) => {
       const name = `${friend.firstName || ""} ${friend.lastName || ""}`.toLowerCase();
-      return (
-        name.includes(keyword) ||
-        (friend.username || "").toLowerCase().includes(keyword)
-      );
+      return name.includes(keyword) || (friend.username || "").toLowerCase().includes(keyword);
     });
   }, [friends, friendSearch]);
+
+  useEffect(() => {
+    incomingCallRef.current = incomingCall;
+  }, [incomingCall]);
+
+  useEffect(() => {
+    outgoingCallRef.current = outgoingCall;
+  }, [outgoingCall]);
+
+  useEffect(() => {
+    activeCallRef.current = activeCall;
+  }, [activeCall]);
+
+  useEffect(() => {
+    friendsRef.current = friends;
+  }, [friends]);
+
+  useEffect(() => {
+    conversationsRef.current = conversations;
+  }, [conversations]);
+
+  useEffect(() => {
+    activeConversationIdRef.current = activeConversationId;
+  }, [activeConversationId]);
+
+  const getUserById = useCallback(
+    (id?: string | null): FriendUser | null => {
+      if (!id) return null;
+
+      const friend = friendsRef.current.find((item) => item._id === id);
+      if (friend) return friend;
+
+      for (const conversation of conversationsRef.current) {
+        const matched = (conversation.participants || []).find(
+          (participant) => getUserId(participant) === id
+        );
+        if (matched && typeof matched !== "string") {
+          return {
+            _id: matched._id,
+            firstName: matched.firstName,
+            lastName: matched.lastName,
+            username: matched.username,
+            profileUrl: matched.profileUrl,
+          };
+        }
+      }
+
+      return null;
+    },
+    []
+  );
+
+  const emitWithAck = useCallback(
+    <T,>(eventName: string, payload: object) =>
+      new Promise<T>((resolve, reject) => {
+        const socket = socketRef.current;
+        if (!socket) {
+          reject(new Error("Socket not connected"));
+          return;
+        }
+
+        socket.emit(eventName, payload, (response: { success?: boolean; data?: T; message?: string }) => {
+          if (response?.success) {
+            resolve(response.data as T);
+            return;
+          }
+          reject(new Error(response?.message || `Failed: ${eventName}`));
+        });
+      }),
+    []
+  );
+
+  const stopLocalAndRemoteStreams = useCallback(() => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+    }
+
+    if (remoteStreamRef.current) {
+      remoteStreamRef.current.getTracks().forEach((track) => track.stop());
+      remoteStreamRef.current = null;
+    }
+
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
+    if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
+  }, []);
+
+  const closePeerConnection = useCallback(() => {
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.onicecandidate = null;
+      peerConnectionRef.current.ontrack = null;
+      peerConnectionRef.current.onconnectionstatechange = null;
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+  }, []);
+
+  const resetCallState = useCallback(() => {
+    closePeerConnection();
+    stopLocalAndRemoteStreams();
+    currentCallIdRef.current = null;
+    currentPeerUserIdRef.current = null;
+    setIncomingCall(null);
+    setOutgoingCall(null);
+    setActiveCall(null);
+    setCallSeconds(0);
+    setIsEndingCall(false);
+  }, [closePeerConnection, stopLocalAndRemoteStreams]);
+
+  const ensureLocalStream = useCallback(async (callType: CallType) => {
+    if (localStreamRef.current) return localStreamRef.current;
+
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: callType === "video",
+    });
+
+    localStreamRef.current = stream;
+
+    if (localVideoRef.current) {
+      localVideoRef.current.srcObject = stream;
+      localVideoRef.current.muted = true;
+      void localVideoRef.current.play().catch(() => null);
+    }
+
+    return stream;
+  }, []);
+
+  const ensurePeerConnection = useCallback(
+    async (callId: string, peerUserId: string, callType: CallType) => {
+      if (peerConnectionRef.current) return peerConnectionRef.current;
+
+      const socket = socketRef.current;
+      if (!socket) {
+        throw new Error("Socket not connected");
+      }
+
+      const stream = await ensureLocalStream(callType);
+      const peerConnection = new RTCPeerConnection({ iceServers: CALL_ICE_SERVERS });
+
+      stream.getTracks().forEach((track) => {
+        peerConnection.addTrack(track, stream);
+      });
+
+      peerConnection.onicecandidate = (event) => {
+        if (!event.candidate) return;
+
+        socket.emit("call:ice-candidate", {
+          callId,
+          candidate: event.candidate,
+        });
+      };
+
+      peerConnection.ontrack = (event) => {
+        if (!remoteStreamRef.current) {
+          remoteStreamRef.current = new MediaStream();
+
+          if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = remoteStreamRef.current;
+            void remoteAudioRef.current.play().catch(() => null);
+          }
+
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStreamRef.current;
+            void remoteVideoRef.current.play().catch(() => null);
+          }
+        }
+
+        event.streams[0]?.getTracks().forEach((track) => {
+          remoteStreamRef.current?.addTrack(track);
+        });
+      };
+
+      peerConnection.onconnectionstatechange = () => {
+        if (
+          peerConnection.connectionState === "failed" ||
+          peerConnection.connectionState === "disconnected" ||
+          peerConnection.connectionState === "closed"
+        ) {
+          resetCallState();
+        }
+      };
+
+      currentCallIdRef.current = callId;
+      currentPeerUserIdRef.current = peerUserId;
+      peerConnectionRef.current = peerConnection;
+
+      return peerConnection;
+    },
+    [ensureLocalStream, resetCallState]
+  );
 
   const loadConversations = useCallback(async () => {
     setIsLoadingConversations(true);
@@ -221,7 +474,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
       });
 
       const senderId = getUserId(incomingMessage.senderId);
-      if (incomingMessage.conversationId === activeConversationId) {
+      if (incomingMessage.conversationId === activeConversationIdRef.current) {
         setMessages((prev) => {
           if (prev.some((message) => message._id === incomingMessage._id)) return prev;
           return [...prev, incomingMessage];
@@ -234,13 +487,134 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
       }
     });
 
+    socket.on("call:incoming", (payload: IncomingCall) => {
+      if (!payload?.callId) return;
+
+      setIncomingCall({
+        callId: payload.callId,
+        callerId: payload.callerId,
+        calleeId: payload.calleeId,
+        callType: payload.callType || "audio",
+      });
+      toast.info("Incoming call");
+    });
+
+    socket.on("call:ringing", ({ callId, calleeId, callType }: { callId: string; calleeId: string; callType: CallType }) => {
+      setOutgoingCall({ callId, calleeId, callType: callType || "audio" });
+      toast.info("Ringing...");
+    });
+
+    socket.on("call:accepted", async ({ callId, by }: { callId: string; by: string }) => {
+      const isCaller = by !== currentUserId;
+      const peerUserId = isCaller
+        ? outgoingCallRef.current?.calleeId || currentPeerUserIdRef.current || ""
+        : incomingCallRef.current?.callerId || currentPeerUserIdRef.current || "";
+      const callType = outgoingCallRef.current?.callType || incomingCallRef.current?.callType || "audio";
+
+      if (!peerUserId) return;
+
+      setIncomingCall(null);
+      setOutgoingCall(null);
+      setActiveCall({
+        callId,
+        peerUserId,
+        callType,
+        startedAt: Date.now(),
+      });
+      setCallSeconds(0);
+
+      try {
+        const peerConnection = await ensurePeerConnection(callId, peerUserId, callType);
+
+        if (isCaller) {
+          const offer = await peerConnection.createOffer();
+          await peerConnection.setLocalDescription(offer);
+          socket.emit("call:offer", { callId, offer });
+        }
+
+        toast.success("Call connected");
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : "Failed to connect call");
+        resetCallState();
+      }
+    });
+
+    socket.on("call:offer", async (payload: CallOfferPayload) => {
+      try {
+        const peerUserId = payload.fromUserId;
+        const callType = incomingCallRef.current?.callType || activeCallRef.current?.callType || "audio";
+        const peerConnection = await ensurePeerConnection(payload.callId, peerUserId, callType);
+
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(payload.offer));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+
+        socket.emit("call:answer", {
+          callId: payload.callId,
+          answer,
+        });
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : "Failed to handle call offer");
+      }
+    });
+
+    socket.on("call:answer", async (payload: CallAnswerPayload) => {
+      try {
+        if (!peerConnectionRef.current) return;
+        await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(payload.answer));
+      } catch (error: unknown) {
+        toast.error(error instanceof Error ? error.message : "Failed to handle call answer");
+      }
+    });
+
+    socket.on("call:ice-candidate", async (payload: CallCandidatePayload) => {
+      try {
+        if (!peerConnectionRef.current) return;
+        await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(payload.candidate));
+      } catch {
+        // ignore candidate race conditions
+      }
+    });
+
+    socket.on("call:rejected", ({ by }: { callId: string; by: string }) => {
+      const name = getUserName(getUserById(by) || undefined);
+      toast.info(`${name} rejected the call`);
+      resetCallState();
+    });
+
+    socket.on("call:missed", ({ userId }: { callId: string; userId: string }) => {
+      const name = getUserName(getUserById(userId) || undefined);
+      toast.info(`Missed call with ${name}`);
+      resetCallState();
+    });
+
+    socket.on("call:ended", ({ by }: { callId: string; by: string }) => {
+      const byMe = by === currentUserId;
+      if (!byMe) {
+        const name = getUserName(getUserById(by) || undefined);
+        toast.info(`${name} ended the call`);
+      }
+      resetCallState();
+    });
+
     socketRef.current = socket;
+
     return () => {
       socket.off("message:new");
+      socket.off("call:incoming");
+      socket.off("call:ringing");
+      socket.off("call:accepted");
+      socket.off("call:offer");
+      socket.off("call:answer");
+      socket.off("call:ice-candidate");
+      socket.off("call:rejected");
+      socket.off("call:missed");
+      socket.off("call:ended");
       socket.disconnect();
       socketRef.current = null;
+      resetCallState();
     };
-  }, [activeConversationId, currentUserId]);
+  }, [currentUserId, ensurePeerConnection, getUserById, resetCallState]);
 
   useEffect(() => {
     const socket = socketRef.current;
@@ -251,6 +625,19 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
       socket.emit("conversation:leave", activeConversationId);
     };
   }, [activeConversationId]);
+
+  useEffect(() => {
+    if (!activeCall) {
+      setCallSeconds(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setCallSeconds(Math.max(0, Math.floor((Date.now() - activeCall.startedAt) / 1000)));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeCall]);
 
   const startConversation = async (friendId?: string) => {
     if (!friendId) return;
@@ -307,9 +694,90 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
     }
   };
 
+  const startCall = async (callType: CallType) => {
+    if (incomingCall || outgoingCall || activeCall) {
+      toast.info("Another call is already in progress");
+      return;
+    }
+
+    const calleeId = getUserId(activeChatUser);
+    if (!calleeId) {
+      toast.info("Select a valid conversation first");
+      return;
+    }
+
+    try {
+      const data = await emitWithAck<{ callId: string }>("call:initiate", {
+        calleeId,
+        callType,
+      });
+
+      if (!data?.callId) {
+        throw new Error("Invalid call response");
+      }
+
+      setOutgoingCall({ callId: data.callId, calleeId, callType });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to start call");
+    }
+  };
+
+  const acceptCall = async () => {
+    if (!incomingCall) return;
+
+    try {
+      await emitWithAck("call:accept", { callId: incomingCall.callId });
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to accept call");
+      resetCallState();
+    }
+  };
+
+  const rejectCall = async () => {
+    if (!incomingCall) return;
+
+    try {
+      await emitWithAck("call:reject", { callId: incomingCall.callId });
+      setIncomingCall(null);
+      toast.info("Call rejected");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to reject call");
+    }
+  };
+
+  const endCall = async () => {
+    if (isEndingCall) return;
+
+    const callId = activeCall?.callId || outgoingCall?.callId;
+    if (!callId) return;
+
+    setIsEndingCall(true);
+    try {
+      await emitWithAck("call:end", { callId });
+      resetCallState();
+      toast.info("Call ended");
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to end call");
+    } finally {
+      setIsEndingCall(false);
+    }
+  };
+
+  const activeCallUser = getUserById(activeCall?.peerUserId || outgoingCall?.calleeId || incomingCall?.callerId);
+  const activeCallName = getUserName(activeCallUser || undefined);
+  const activeCallAvatar = buildProfileImageUrl(getUserAvatar(activeCallUser || undefined));
+
+  const callDurationLabel = useMemo(() => {
+    const minutes = Math.floor(callSeconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const seconds = (callSeconds % 60).toString().padStart(2, "0");
+    return `${minutes}:${seconds}`;
+  }, [callSeconds]);
+
   return (
-    <section className="grid h-full grid-cols-12 gap-4">
-      <aside className="col-span-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <section className="relative grid h-full min-h-0 grid-cols-12 gap-4 overflow-hidden">
+      <aside className="col-span-4 flex min-h-0 flex-col rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
         <h2 className="mb-3 text-lg font-semibold text-slate-900 dark:text-zinc-100">Messages</h2>
 
         <div className="mb-4">
@@ -338,7 +806,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
           </div>
         </div>
 
-        <div className="scrollbar-feed h-[calc(100%-7rem)] space-y-2 overflow-y-auto pr-1">
+        <div className="scrollbar-feed min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
           {isLoadingConversations && (
             <p className="text-sm text-slate-500 dark:text-zinc-400">Loading conversations...</p>
           )}
@@ -389,14 +857,35 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
         </div>
       </aside>
 
-      <main className="col-span-8 flex h-full flex-col rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
-        <div className="border-b border-slate-200 px-4 py-3 dark:border-zinc-800">
+      <main className="col-span-8 flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-zinc-800">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
             {activeChatUser ? getUserName(activeChatUser) : "Select a conversation"}
           </h3>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={!activeChatUser || !!outgoingCall || !!incomingCall || !!activeCall}
+              onClick={() => void startCall("audio")}
+              className="rounded-full border border-slate-300 p-2 text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              title="Audio call"
+            >
+              <Phone size={16} />
+            </button>
+            <button
+              type="button"
+              disabled={!activeChatUser || !!outgoingCall || !!incomingCall || !!activeCall}
+              onClick={() => void startCall("video")}
+              className="rounded-full border border-slate-300 p-2 text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-800"
+              title="Video call"
+            >
+              <Video size={16} />
+            </button>
+          </div>
         </div>
 
-        <div className="scrollbar-feed flex-1 space-y-3 overflow-y-auto p-4">
+        <div className="scrollbar-feed min-h-0 flex-1 space-y-3 overflow-y-auto p-4">
           {!activeConversationId && (
             <p className="text-sm text-slate-500 dark:text-zinc-400">
               Select a conversation from the left or start one with a friend.
@@ -412,10 +901,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
             messages.map((message) => {
               const isMine = getUserId(message.senderId) === currentUserId;
               return (
-                <div
-                  key={message._id}
-                  className={`flex ${isMine ? "justify-end" : "justify-start"}`}
-                >
+                <div key={message._id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
                   <div
                     className={`max-w-[75%] rounded-2xl px-3 py-2 text-sm ${
                       isMine
@@ -463,6 +949,22 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
           </div>
         </div>
       </main>
+
+      <CallModal
+        incomingCall={incomingCall}
+        outgoingCall={outgoingCall}
+        activeCall={activeCall}
+        callName={activeCallName}
+        callAvatar={activeCallAvatar}
+        callDurationLabel={callDurationLabel}
+        isEndingCall={isEndingCall}
+        onAccept={() => void acceptCall()}
+        onReject={() => void rejectCall()}
+        onEnd={() => void endCall()}
+        localVideoRef={localVideoRef}
+        remoteVideoRef={remoteVideoRef}
+        remoteAudioRef={remoteAudioRef}
+      />
     </section>
   );
 }

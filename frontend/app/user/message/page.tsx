@@ -9,7 +9,7 @@ export default async function MessagePage() {
   }
 
   return (
-    <div className="h-[calc(100vh-80px)] p-4">
+    <div className="h-[calc(100vh-80px)] overflow-hidden p-4">
       <MessageClient
         currentUserId={user.id || user._id}
       />
