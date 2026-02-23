@@ -43,6 +43,9 @@ export const API = {
         SEND_MESSAGE: (conversationId: string) => `/api/messages/${conversationId}`,
         MARK_READ: (conversationId: string) => `/api/messages/${conversationId}/read`,
     },
+    Calls: {
+        ALL: "/api/calls",
+    },
     ADMIN:{
         USER:{
             CREATE: '/api/admin/users',

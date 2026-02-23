@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import { Phone, Send, Video } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { handleGetMyFriends } from "@/lib/actions/friend-action";
+import { handleListMyCalls } from "@/lib/actions/call-action";
 import CallModal from "./CallModal";
 import {
   handleGetOrCreateConversation,
@@ -49,6 +50,20 @@ type MessageItem = {
   readBy?: string[];
 };
 
+type CallStatus = "RINGING" | "ACCEPTED" | "REJECTED" | "MISSED" | "ENDED";
+
+type CallHistoryItem = {
+  _id: string;
+  callerId: string | FriendUser;
+  calleeId: string | FriendUser;
+  status: CallStatus;
+  callType: CallType;
+  durationSeconds?: number;
+  createdAt?: string;
+  startedAt?: string;
+  endedAt?: string;
+};
+
 type CallType = "audio" | "video";
 
 type IncomingCall = {
@@ -89,6 +104,10 @@ type CallCandidatePayload = {
   candidate: RTCIceCandidateInit;
 };
 
+type TimelineItem =
+  | { kind: "message"; at: number; item: MessageItem }
+  | { kind: "call"; at: number; item: CallHistoryItem };
+
 const getUserId = (user: string | MessageUser | FriendUser | undefined) => {
   if (!user) return "";
   if (typeof user === "string") return user;
@@ -117,6 +136,15 @@ const getAuthTokenFromCookie = () => {
   return match ? decodeURIComponent(match[1]) : null;
 };
 
+const formatCallDuration = (seconds?: number) => {
+  if (!seconds || seconds <= 0) return "00:00";
+  const mins = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
+  const secs = (seconds % 60).toString().padStart(2, "0");
+  return `${mins}:${secs}`;
+};
+
 const CALL_ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 
 export default function MessageClient({ currentUserId }: { currentUserId: string }) {
@@ -126,6 +154,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
   const [conversations, setConversations] = useState<ConversationItem[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<MessageItem[]>([]);
+  const [callHistory, setCallHistory] = useState<CallHistoryItem[]>([]);
   const [messageInput, setMessageInput] = useState("");
   const [isLoadingConversations, setIsLoadingConversations] = useState(true);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
@@ -410,6 +439,15 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
     }
   }, []);
 
+  const loadCallHistory = useCallback(async () => {
+    const response = await handleListMyCalls(1, 200);
+    if (response.success) {
+      setCallHistory((response.data || []) as CallHistoryItem[]);
+      return;
+    }
+    setCallHistory([]);
+  }, []);
+
   const loadMessages = async (conversationId: string) => {
     setIsLoadingMessages(true);
     try {
@@ -427,8 +465,8 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
   };
 
   useEffect(() => {
-    void Promise.all([loadConversations(), loadFriends()]);
-  }, [loadConversations, loadFriends]);
+    void Promise.all([loadConversations(), loadFriends(), loadCallHistory()]);
+  }, [loadConversations, loadFriends, loadCallHistory]);
 
   useEffect(() => {
     const userIdParam = searchParams.get("userId");
@@ -550,6 +588,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
         }
 
         toast.success("Call connected");
+        void loadCallHistory();
       } catch (error: unknown) {
         toast.error(error instanceof Error ? error.message : "Failed to connect call");
         resetCallState();
@@ -597,12 +636,14 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
       const name = getUserName(getUserById(by) || undefined);
       toast.info(`${name} rejected the call`);
       resetCallState();
+      void loadCallHistory();
     });
 
     socket.on("call:missed", ({ userId }: { callId: string; userId: string }) => {
       const name = getUserName(getUserById(userId) || undefined);
       toast.info(`Missed call with ${name}`);
       resetCallState();
+      void loadCallHistory();
     });
 
     socket.on("call:ended", ({ by }: { callId: string; by: string }) => {
@@ -612,6 +653,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
         toast.info(`${name} ended the call`);
       }
       resetCallState();
+      void loadCallHistory();
     });
 
     socketRef.current = socket;
@@ -631,7 +673,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
       socketRef.current = null;
       resetCallState();
     };
-  }, [currentUserId, ensurePeerConnection, getUserById, resetCallState]);
+  }, [currentUserId, ensurePeerConnection, getUserById, loadCallHistory, resetCallState]);
 
   useEffect(() => {
     const socket = socketRef.current;
@@ -760,6 +802,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
       }
 
       setOutgoingCall({ callId: data.callId, calleeId, callType });
+      void loadCallHistory();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to start call");
     }
@@ -783,6 +826,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
       await emitWithAck("call:reject", { callId: incomingCall.callId });
       setIncomingCall(null);
       toast.info("Call rejected");
+      void loadCallHistory();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to reject call");
     }
@@ -799,6 +843,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
       await emitWithAck("call:end", { callId });
       resetCallState();
       toast.info("Call ended");
+      void loadCallHistory();
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Failed to end call");
     } finally {
@@ -820,6 +865,59 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
   const activeCallUser = getUserById(activeCall?.peerUserId || outgoingCall?.calleeId || incomingCall?.callerId);
   const activeCallName = getUserName(activeCallUser || undefined);
   const activeCallAvatar = buildProfileImageUrl(getUserAvatar(activeCallUser || undefined));
+  const activeChatUserId = getUserId(activeChatUser || undefined);
+
+  const filteredCallHistory = useMemo(() => {
+    if (!activeChatUserId) return [];
+
+    return callHistory.filter((call) => {
+      const callerId = getUserId(call.callerId as string | FriendUser);
+      const calleeId = getUserId(call.calleeId as string | FriendUser);
+      return (
+        (callerId === currentUserId && calleeId === activeChatUserId) ||
+        (calleeId === currentUserId && callerId === activeChatUserId)
+      );
+    });
+  }, [activeChatUserId, callHistory, currentUserId]);
+
+  const timelineItems = useMemo<TimelineItem[]>(() => {
+    const messageEntries: TimelineItem[] = messages.map((message) => ({
+      kind: "message",
+      at: new Date(message.createdAt || 0).getTime(),
+      item: message,
+    }));
+
+    const callEntries: TimelineItem[] = filteredCallHistory.map((call) => ({
+      kind: "call",
+      at: new Date(call.endedAt || call.startedAt || call.createdAt || 0).getTime(),
+      item: call,
+    }));
+
+    return [...messageEntries, ...callEntries].sort((a, b) => a.at - b.at);
+  }, [filteredCallHistory, messages]);
+
+  const getCallEventLabel = (call: CallHistoryItem) => {
+    const isOutgoing = getUserId(call.callerId as string | FriendUser) === currentUserId;
+    const direction = isOutgoing ? "Outgoing" : "Incoming";
+    const mode = call.callType === "video" ? "Video" : "Audio";
+
+    if (call.status === "MISSED") {
+      return `${direction} ${mode} call missed`;
+    }
+    if (call.status === "REJECTED") {
+      return `${direction} ${mode} call declined`;
+    }
+    if (call.status === "RINGING") {
+      return `${direction} ${mode} call ringing`;
+    }
+    if ((call.status === "ENDED" || call.status === "ACCEPTED") && (call.durationSeconds || 0) > 0) {
+      return `${direction} ${mode} call · ${formatCallDuration(call.durationSeconds)}`;
+    }
+    if (call.status === "ENDED") {
+      return `${direction} ${mode} call canceled`;
+    }
+    return `${direction} ${mode} call`;
+  };
 
   const callDurationLabel = useMemo(() => {
     const minutes = Math.floor(callSeconds / 60)
@@ -952,7 +1050,22 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
 
           {activeConversationId &&
             !isLoadingMessages &&
-            messages.map((message) => {
+            timelineItems.map((entry) => {
+              if (entry.kind === "call") {
+                const call = entry.item;
+                return (
+                  <div key={`call-${call._id}`} className="flex justify-center">
+                    <div className="max-w-[80%] rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300">
+                      {getCallEventLabel(call)}
+                      <span className="ml-2 text-[10px] text-slate-500 dark:text-zinc-400">
+                        {call.createdAt ? new Date(call.createdAt).toLocaleTimeString() : ""}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+
+              const message = entry.item;
               const isMine = getUserId(message.senderId) === currentUserId;
               return (
                 <div key={message._id} className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
