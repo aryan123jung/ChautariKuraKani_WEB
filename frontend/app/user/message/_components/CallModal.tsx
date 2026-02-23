@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import { Phone, PhoneOff, Video } from "lucide-react";
+import { Mic, MicOff, Phone, PhoneOff, Video } from "lucide-react";
 
 type CallType = "audio" | "video";
 
@@ -33,9 +33,11 @@ type Props = {
   callAvatar: string | null;
   callDurationLabel: string;
   isEndingCall: boolean;
+  isMuted: boolean;
   onAccept: () => void;
   onReject: () => void;
   onEnd: () => void;
+  onToggleMute: () => void;
   localVideoRef: RefObject<HTMLVideoElement | null>;
   remoteVideoRef: RefObject<HTMLVideoElement | null>;
   remoteAudioRef: RefObject<HTMLAudioElement | null>;
@@ -49,9 +51,11 @@ export default function CallModal({
   callAvatar,
   callDurationLabel,
   isEndingCall,
+  isMuted,
   onAccept,
   onReject,
   onEnd,
+  onToggleMute,
   localVideoRef,
   remoteVideoRef,
   remoteAudioRef,
@@ -65,49 +69,50 @@ export default function CallModal({
 
   return (
     <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
-        <div className="mb-4 flex items-center gap-3">
-          <div className="h-14 w-14 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
-            {callAvatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={callAvatar} alt={callName} className="h-full w-full object-cover" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-700 dark:text-zinc-200">
-                {callName.slice(0, 1).toUpperCase()}
-              </div>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold text-slate-900 dark:text-zinc-100">{callName}</p>
-            <p className="text-xs text-slate-500 dark:text-zinc-400">
-              {isIncoming && `Incoming ${isVideoCall ? "video" : "audio"} call`}
-              {!isIncoming && !isConnected && `Calling... (${isVideoCall ? "video" : "audio"})`}
-              {isConnected && `${isVideoCall ? "Video" : "Audio"} call connected`}
-            </p>
-            {isConnected && (
-              <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">{callDurationLabel}</p>
-            )}
-          </div>
-        </div>
+      <div className="relative w-full max-w-4xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-zinc-700 dark:bg-zinc-900">
+        {isConnected && isVideoCall ? (
+          <div className="relative h-[68vh] min-h-[420px] bg-black">
+            <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
 
-        {isConnected && isVideoCall && (
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            <div className="relative h-32 overflow-hidden rounded-xl bg-black">
-              <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
-              <span className="absolute bottom-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
-                {callName}
-              </span>
+            <div className="absolute left-4 top-4 rounded-xl bg-black/50 px-3 py-2 text-white backdrop-blur">
+              <p className="max-w-[16rem] truncate text-sm font-semibold">{callName}</p>
+              <p className="text-xs text-zinc-200">{callDurationLabel}</p>
             </div>
-            <div className="relative h-32 overflow-hidden rounded-xl bg-black">
+
+            <div className="absolute bottom-6 right-6 h-36 w-24 overflow-hidden rounded-xl border border-white/20 bg-black shadow-lg sm:h-44 sm:w-32">
               <video ref={localVideoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
-              <span className="absolute bottom-2 left-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">
-                You
-              </span>
+            </div>
+          </div>
+        ) : (
+          <div className="p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-14 w-14 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
+                {callAvatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={callAvatar} alt={callName} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-700 dark:text-zinc-200">
+                    {callName.slice(0, 1).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-semibold text-slate-900 dark:text-zinc-100">{callName}</p>
+                <p className="text-xs text-slate-500 dark:text-zinc-400">
+                  {isIncoming && `Incoming ${isVideoCall ? "video" : "audio"} call`}
+                  {!isIncoming && !isConnected && `Calling... (${isVideoCall ? "video" : "audio"})`}
+                  {isConnected && `${isVideoCall ? "Video" : "Audio"} call connected`}
+                </p>
+                {isConnected && (
+                  <p className="mt-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">{callDurationLabel}</p>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        <div className="flex items-center gap-3">
+        <div className="border-t border-slate-200 p-4 dark:border-zinc-800">
+          <div className="flex items-center gap-3">
           {isIncoming && (
             <>
               <button
@@ -128,15 +133,31 @@ export default function CallModal({
           )}
 
           {!isIncoming && (
-            <button
-              onClick={onEnd}
-              disabled={isEndingCall}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
-            >
-              <PhoneOff size={16} />
-              {isConnected ? "End Call" : "Cancel Call"}
-            </button>
+            <>
+              {isConnected && (
+                <button
+                  onClick={onToggleMute}
+                  className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                    isMuted
+                      ? "bg-amber-500 text-white hover:bg-amber-600"
+                      : "bg-slate-200 text-slate-800 hover:bg-slate-300 dark:bg-zinc-800 dark:text-zinc-100 dark:hover:bg-zinc-700"
+                  }`}
+                >
+                  {isMuted ? <MicOff size={16} /> : <Mic size={16} />}
+                  {isMuted ? "Unmute" : "Mute"}
+                </button>
+              )}
+              <button
+                onClick={onEnd}
+                disabled={isEndingCall}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:opacity-60"
+              >
+                <PhoneOff size={16} />
+                {isConnected ? "End Call" : "Cancel Call"}
+              </button>
+            </>
           )}
+        </div>
         </div>
 
         <audio ref={remoteAudioRef} autoPlay playsInline className="hidden" />

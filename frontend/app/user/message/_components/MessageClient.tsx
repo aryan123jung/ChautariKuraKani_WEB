@@ -136,6 +136,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
   const [activeCall, setActiveCall] = useState<ActiveCall | null>(null);
   const [callSeconds, setCallSeconds] = useState(0);
   const [isEndingCall, setIsEndingCall] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -298,6 +299,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
     setActiveCall(null);
     setCallSeconds(0);
     setIsEndingCall(false);
+    setIsMuted(false);
   }, [closePeerConnection, stopLocalAndRemoteStreams, stopCallTones]);
 
   const ensureLocalStream = useCallback(async (callType: CallType) => {
@@ -804,6 +806,17 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
     }
   };
 
+  const toggleMute = () => {
+    const localStream = localStreamRef.current;
+    if (!localStream) return;
+
+    const nextMuted = !isMuted;
+    localStream.getAudioTracks().forEach((track) => {
+      track.enabled = !nextMuted;
+    });
+    setIsMuted(nextMuted);
+  };
+
   const activeCallUser = getUserById(activeCall?.peerUserId || outgoingCall?.calleeId || incomingCall?.callerId);
   const activeCallName = getUserName(activeCallUser || undefined);
   const activeCallAvatar = buildProfileImageUrl(getUserAvatar(activeCallUser || undefined));
@@ -999,9 +1012,11 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
         callAvatar={activeCallAvatar}
         callDurationLabel={callDurationLabel}
         isEndingCall={isEndingCall}
+        isMuted={isMuted}
         onAccept={() => void acceptCall()}
         onReject={() => void rejectCall()}
         onEnd={() => void endCall()}
+        onToggleMute={toggleMute}
         localVideoRef={localVideoRef}
         remoteVideoRef={remoteVideoRef}
         remoteAudioRef={remoteAudioRef}
