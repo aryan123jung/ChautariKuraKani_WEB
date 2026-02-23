@@ -142,6 +142,8 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteAudioRef = useRef<HTMLAudioElement | null>(null);
+  const incomingRingtoneRef = useRef<HTMLAudioElement | null>(null);
+  const outgoingRingbackRef = useRef<HTMLAudioElement | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const remoteStreamRef = useRef<MediaStream | null>(null);
@@ -263,6 +265,18 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
     if (remoteAudioRef.current) remoteAudioRef.current.srcObject = null;
   }, []);
 
+  const stopCallTones = useCallback(() => {
+    if (incomingRingtoneRef.current) {
+      incomingRingtoneRef.current.pause();
+      incomingRingtoneRef.current.currentTime = 0;
+    }
+
+    if (outgoingRingbackRef.current) {
+      outgoingRingbackRef.current.pause();
+      outgoingRingbackRef.current.currentTime = 0;
+    }
+  }, []);
+
   const closePeerConnection = useCallback(() => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.onicecandidate = null;
@@ -276,6 +290,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
   const resetCallState = useCallback(() => {
     closePeerConnection();
     stopLocalAndRemoteStreams();
+    stopCallTones();
     currentCallIdRef.current = null;
     currentPeerUserIdRef.current = null;
     setIncomingCall(null);
@@ -283,7 +298,7 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
     setActiveCall(null);
     setCallSeconds(0);
     setIsEndingCall(false);
-  }, [closePeerConnection, stopLocalAndRemoteStreams]);
+  }, [closePeerConnection, stopLocalAndRemoteStreams, stopCallTones]);
 
   const ensureLocalStream = useCallback(async (callType: CallType) => {
     if (localStreamRef.current) return localStreamRef.current;
@@ -639,6 +654,32 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
     return () => clearInterval(interval);
   }, [activeCall]);
 
+  useEffect(() => {
+    const incomingTone = incomingRingtoneRef.current;
+    const outgoingTone = outgoingRingbackRef.current;
+
+    if (!incomingTone || !outgoingTone) return;
+
+    if (incomingCall && !activeCall) {
+      outgoingTone.pause();
+      outgoingTone.currentTime = 0;
+      void incomingTone.play().catch(() => null);
+      return;
+    }
+
+    if (outgoingCall && !activeCall) {
+      incomingTone.pause();
+      incomingTone.currentTime = 0;
+      void outgoingTone.play().catch(() => null);
+      return;
+    }
+
+    incomingTone.pause();
+    incomingTone.currentTime = 0;
+    outgoingTone.pause();
+    outgoingTone.currentTime = 0;
+  }, [incomingCall, outgoingCall, activeCall]);
+
   const startConversation = async (friendId?: string) => {
     if (!friendId) return;
     const response = await handleGetOrCreateConversation(friendId);
@@ -964,6 +1005,21 @@ export default function MessageClient({ currentUserId }: { currentUserId: string
         localVideoRef={localVideoRef}
         remoteVideoRef={remoteVideoRef}
         remoteAudioRef={remoteAudioRef}
+      />
+
+      <audio
+        ref={incomingRingtoneRef}
+        src="/sounds/incoming-call.mp3"
+        preload="auto"
+        loop
+        className="hidden"
+      />
+      <audio
+        ref={outgoingRingbackRef}
+        src="/sounds/outgoing-call.mp3"
+        preload="auto"
+        loop
+        className="hidden"
       />
     </section>
   );
