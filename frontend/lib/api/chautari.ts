@@ -55,6 +55,17 @@ export const deleteChautari = async (communityId: string) => {
   }
 };
 
+export const updateChautari = async (communityId: string, data: FormData) => {
+  try {
+    const response = await axios.put(API.Chautari.UPDATE(communityId), data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(getErrorMessage(error, "Update community failed"));
+  }
+};
+
 export const joinChautari = async (communityId: string) => {
   try {
     const response = await axios.post(API.Chautari.JOIN(communityId));

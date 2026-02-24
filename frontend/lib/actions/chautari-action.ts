@@ -11,6 +11,7 @@ import {
   joinChautari,
   leaveChautari,
   searchChautari,
+  updateChautari,
 } from "../api/chautari";
 
 const getErrorMessage = (error: unknown, fallback: string) => {
@@ -86,6 +87,25 @@ export const handleDeleteChautari = async (communityId: string) => {
       success: false,
       data: null,
       message: getErrorMessage(error, "Delete community action failed"),
+    };
+  }
+};
+
+export const handleUpdateChautari = async (communityId: string, formData: FormData) => {
+  try {
+    const response = await updateChautari(communityId, formData);
+    revalidatePath("/user/chautari");
+    revalidatePath("/user/home");
+    return {
+      success: !!response?.success,
+      data: response?.data || null,
+      message: response?.message || "Community updated successfully",
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      data: null,
+      message: getErrorMessage(error, "Update community action failed"),
     };
   }
 };

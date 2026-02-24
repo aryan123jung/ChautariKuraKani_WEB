@@ -9,6 +9,7 @@ import {
   handleGetChautariPosts,
   handleJoinChautari,
   handleLeaveChautari,
+  handleUpdateChautari,
 } from "@/lib/actions/chautari-action";
 import {
   handleCreateComment,
@@ -30,6 +31,7 @@ import CommunityCommentsModal from "./CommunityCommentsModal";
 import CreateCommunityModal from "./CreateCommunityModal";
 import CreateChautariPostModal from "./CreateChautariPostModal";
 import DeleteModal from "./DeleteModal";
+import EditCommunityModal from "./EditCommunityModal";
 import EditChautariPostModal from "./EditChautariPostModal";
 import MyChautariSidebar from "./MyChautariSidebar";
 
@@ -101,6 +103,11 @@ export default function ChautariClient({
   const [newCommunityDescription, setNewCommunityDescription] = useState("");
   const [newCommunityProfileFile, setNewCommunityProfileFile] = useState<File | null>(null);
   const [creatingCommunity, setCreatingCommunity] = useState(false);
+  const [isEditCommunityOpen, setIsEditCommunityOpen] = useState(false);
+  const [editCommunityName, setEditCommunityName] = useState("");
+  const [editCommunityDescription, setEditCommunityDescription] = useState("");
+  const [editCommunityProfileFile, setEditCommunityProfileFile] = useState<File | null>(null);
+  const [updatingCommunity, setUpdatingCommunity] = useState(false);
 
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [postModalSession, setPostModalSession] = useState(0);
@@ -261,6 +268,57 @@ export default function ChautariClient({
       toast.error(error instanceof Error ? error.message : "Action failed");
     } finally {
       setJoiningOrLeaving(false);
+    }
+  };
+
+  const onOpenEditCommunity = () => {
+    if (!selectedCommunity || !isCreator) return;
+    setEditCommunityName(selectedCommunity.name || (selectedCommunity.slug ? `c/${selectedCommunity.slug}` : ""));
+    setEditCommunityDescription(selectedCommunity.description || "");
+    setEditCommunityProfileFile(null);
+    setIsEditCommunityOpen(true);
+  };
+
+  const onUpdateCommunity = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedCommunityId || !isCreator || updatingCommunity) return;
+
+    const normalizedName = normalizeCommunityName(editCommunityName);
+    const originalName = selectedCommunity?.name || (selectedCommunity?.slug ? `c/${selectedCommunity.slug}` : "");
+    const trimmedDescription = editCommunityDescription.trim();
+    const originalDescription = (selectedCommunity?.description || "").trim();
+
+    const hasNameChange = normalizedName && normalizedName !== originalName;
+    const hasDescriptionChange = trimmedDescription !== originalDescription;
+    const hasImageChange = Boolean(editCommunityProfileFile);
+
+    if (!hasNameChange && !hasDescriptionChange && !hasImageChange) {
+      toast.error("No changes to update");
+      return;
+    }
+
+    setUpdatingCommunity(true);
+    try {
+      const formData = new FormData();
+      if (hasNameChange) formData.append("name", normalizedName);
+      if (hasDescriptionChange) formData.append("description", trimmedDescription);
+      if (editCommunityProfileFile) {
+        formData.append("communityProfileUrl", editCommunityProfileFile);
+      }
+
+      const response = await handleUpdateChautari(selectedCommunityId, formData);
+      if (!response.success || !response.data) {
+        throw new Error(response.message || "Failed to update community");
+      }
+
+      toast.success(response.message || "Community updated");
+      setIsEditCommunityOpen(false);
+      setEditCommunityProfileFile(null);
+      await loadCommunity(selectedCommunityId);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to update community");
+    } finally {
+      setUpdatingCommunity(false);
     }
   };
 
@@ -593,6 +651,17 @@ export default function ChautariClient({
                         {isCreator && (
                           <button
                             type="button"
+                            onClick={onOpenEditCommunity}
+                            disabled={updatingCommunity}
+                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
+                          >
+                            <Pencil size={14} />
+                            Edit
+                          </button>
+                        )}
+                        {isCreator && (
+                          <button
+                            type="button"
                             onClick={() => setIsDeleteModalOpen(true)}
                             disabled={deletingCommunity}
                             className="inline-flex items-center gap-1 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
@@ -779,6 +848,22 @@ export default function ChautariClient({
         onNameChange={setNewCommunityName}
         onDescriptionChange={setNewCommunityDescription}
         onProfileFileChange={setNewCommunityProfileFile}
+      />
+
+      <EditCommunityModal
+        isOpen={isEditCommunityOpen}
+        updatingCommunity={updatingCommunity}
+        communityName={editCommunityName}
+        communityDescription={editCommunityDescription}
+        communityProfileFile={editCommunityProfileFile}
+        onClose={() => {
+          setIsEditCommunityOpen(false);
+          setEditCommunityProfileFile(null);
+        }}
+        onSubmit={(event) => void onUpdateCommunity(event)}
+        onNameChange={setEditCommunityName}
+        onDescriptionChange={setEditCommunityDescription}
+        onProfileFileChange={setEditCommunityProfileFile}
       />
 
       <CreateChautariPostModal

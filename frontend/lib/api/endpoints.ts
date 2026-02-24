@@ -52,6 +52,7 @@ export const API = {
         SEARCH: "/api/chautari/search",
         GET_ONE: (communityId: string) => `/api/chautari/${communityId}`,
         DELETE: (communityId: string) => `/api/chautari/${communityId}`,
+        UPDATE: (communityId: string) => `/api/chautari/${communityId}`,
         JOIN: (communityId: string) => `/api/chautari/${communityId}/join`,
         LEAVE: (communityId: string) => `/api/chautari/${communityId}/leave`,
         MEMBER_COUNT: (communityId: string) => `/api/chautari/${communityId}/member-count`,
