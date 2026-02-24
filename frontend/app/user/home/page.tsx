@@ -293,15 +293,17 @@ import RightSidebar from "./_components/RightSidebar";
 import FeedToggle from "./_components/FeedToggle";
 import { handleGetAllPosts } from "@/lib/actions/post-action";
 import { handleGetMyFriends } from "@/lib/actions/friend-action";
+import { handleListConversations } from "@/lib/actions/message-action";
 import type { PostItem } from "../profile/schema";
 
 export default async function HomePage() {
   const user = await getUserData();
   if (!user) return null;
 
-  const [postsResponse, friendsResponse] = await Promise.all([
+  const [postsResponse, friendsResponse, conversationsResponse] = await Promise.all([
     handleGetAllPosts(1, 200),
     handleGetMyFriends(1, 200),
+    handleListConversations(1, 200),
   ]);
 
   const posts: PostItem[] = postsResponse.success
@@ -313,12 +315,20 @@ export default async function HomePage() {
         .map((friend) => friend?._id)
         .filter((id): id is string => Boolean(id))
     : [];
+  const friends = friendsResponse.success ? (friendsResponse.data || []) : [];
+  const conversations = conversationsResponse.success
+    ? (conversationsResponse.data || [])
+    : [];
 
   return (
     <div className="flex h-[calc(100vh-80px)] overflow-hidden gap-4 p-4">
       {/* Left sidebar */}
       <aside className="w-1/4 h-full flex-shrink-0 overflow-hidden">
-        <LeftSidebar />
+        <LeftSidebar
+          friends={friends}
+          conversations={conversations}
+          currentUserId={user.id || user._id}
+        />
       </aside>
 
       {/* Main feed */}
