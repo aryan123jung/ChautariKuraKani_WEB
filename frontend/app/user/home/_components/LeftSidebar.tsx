@@ -1,12 +1,31 @@
 "use client";
 
+import { getChautariById } from "@/lib/api/chautari";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import type { CommunityItem } from "@/app/user/chautari/schema";
 import type { HomeConversationItem, HomeFriendUser } from "../schema";
 
 const buildProfileImageUrl = (profileUrl?: string) => {
   if (!profileUrl) return null;
   const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6060";
   return `${backendUrl}/uploads/profile/${profileUrl}`;
+};
+
+const buildCommunityProfileImageUrl = (profileUrl?: string) => {
+  if (!profileUrl) return null;
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6060";
+  return `${backendUrl}/uploads/chautari/profile/${profileUrl}`;
+};
+
+const getCommunityDisplayName = (community: CommunityItem) => {
+  if (community.name) {
+    return community.name.toLowerCase().startsWith("c/")
+      ? community.name
+      : `c/${community.name}`;
+  }
+  if (community.slug) return `c/${community.slug}`;
+  return "c/community";
 };
 
 const getDisplayName = (friend: HomeFriendUser) => {
@@ -30,7 +49,9 @@ export default function LeftSidebar({
   currentUserId?: string;
 }) {
   const messageFriends = friends.slice(0, 10);
+  const [myChautari, setMyChautari] = useState<CommunityItem[]>([]);
   const lastMessageByFriendId = new Map<string, string>();
+  const MY_CHAUTARI_IDS_KEY = "my_chautari_ids";
 
   conversations.forEach((conversation) => {
     const otherParticipant = (conversation.participants || []).find(
@@ -41,24 +62,94 @@ export default function LeftSidebar({
     lastMessageByFriendId.set(friendId, conversation.lastMessage || "No messages yet");
   });
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const raw = window.localStorage.getItem(MY_CHAUTARI_IDS_KEY);
+    if (!raw) return;
+
+    let ids: string[] = [];
+    try {
+      ids = JSON.parse(raw) as string[];
+    } catch {
+      ids = [];
+    }
+
+    if (!ids.length) return;
+
+    let isCancelled = false;
+    void Promise.all(ids.map((id) => getChautariById(id)))
+      .then((responses) => {
+        if (isCancelled) return;
+        const communities = responses
+          .filter((response) => response?.success && response?.data)
+          .map((response) => response.data as CommunityItem);
+        setMyChautari(communities);
+      })
+      .catch(() => {
+        if (isCancelled) return;
+        setMyChautari([]);
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col gap-4 overflow-hidden">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">
       {/* Chautari */}
-      <div className="flex flex-col">
-        <h2 className="font-bold mb-2 text-gray-900 dark:text-zinc-100">Chautari</h2>
-        <ul className="scrollbar-feed space-y-2 max-h-48 overflow-y-auto">
-          <li className="bg-gray-200 dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 rounded-md p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-zinc-800">c/Chautari_Guff</li>
-          <li className="bg-gray-200 dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 rounded-md p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-zinc-800">c/Ramailo_Kura</li>
-          <li className="bg-gray-200 dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 rounded-md p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-zinc-800">c/Vibes</li>
-          <li className="bg-gray-200 dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 rounded-md p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-zinc-800">c/Meme_dokan</li>
-          <li className="bg-gray-200 dark:bg-zinc-900 text-gray-800 dark:text-zinc-200 rounded-md p-2 cursor-pointer hover:bg-gray-300 dark:hover:bg-zinc-800">c/Sports</li>
+      <section className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <h2 className="mb-2 font-bold text-gray-900 dark:text-zinc-100">Chautari</h2>
+        <ul className="scrollbar-feed min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+          {myChautari.length === 0 && (
+            <li className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
+              No joined/created Chautari yet.
+            </li>
+          )}
+
+          {myChautari.map((community) => {
+            const communityName = getCommunityDisplayName(community);
+            const communityAvatar = buildCommunityProfileImageUrl(community.profileUrl);
+            return (
+              <li key={community._id}>
+                <Link
+                  href={`/user/chautari?communityId=${community._id}`}
+                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:bg-zinc-800"
+                >
+                  <div className="h-10 w-10 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
+                    {communityAvatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={communityAvatar}
+                        alt={communityName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-gray-700 dark:text-zinc-200">
+                        {(community.slug || community.name || "c").slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                      {communityName}
+                    </p>
+                    <p className="truncate text-xs text-slate-500 dark:text-zinc-400">
+                      {community.description || "Open community"}
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
-      </div>
+      </section>
 
       {/* Messages */}
-      <div className="flex flex-col">
-        <h2 className="font-bold mb-2 text-gray-900 dark:text-zinc-100">Messages</h2>
-        <ul className="scrollbar-feed space-y-2 max-h-48 overflow-y-auto">
+      <section className="flex min-h-0 flex-1 flex-col rounded-2xl border border-slate-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <h2 className="mb-2 font-bold text-gray-900 dark:text-zinc-100">Messages</h2>
+        <ul className="scrollbar-feed min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
           {messageFriends.length === 0 && (
             <li className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
               No friends yet.
@@ -95,7 +186,7 @@ export default function LeftSidebar({
             );
           })}
         </ul>
-      </div>
+      </section>
     </div>
   );
 }
