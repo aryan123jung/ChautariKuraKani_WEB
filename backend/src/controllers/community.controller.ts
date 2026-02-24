@@ -91,6 +91,36 @@ export class CommunityController {
     }
   }
 
+  async updateCommunity(req: Request, res: Response) {
+    try {
+      const userId = req.user?._id?.toString();
+      if (!userId) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+
+      const payload: any = { ...req.body };
+      if (req.file) {
+        payload.profileUrl = req.file.filename;
+      }
+
+      const updated = await communityService.updateCommunity(
+        userId,
+        req.params.communityId,
+        payload
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: updated,
+        message: "Chautari updated successfully"
+      });
+    } catch (error: Error | any) {
+      return res
+        .status(error.statusCode || 500)
+        .json({ success: false, message: error.message || "Internal Server Error" });
+    }
+  }
+
   async searchCommunities(req: Request, res: Response) {
     try {
       const { page, size, search }: QueryParams = req.query;
@@ -132,6 +162,23 @@ export class CommunityController {
         data: communities,
         pagination,
         message: "My Chautari fetched successfully"
+      });
+    } catch (error: Error | any) {
+      return res
+        .status(error.statusCode || 500)
+        .json({ success: false, message: error.message || "Internal Server Error" });
+    }
+  }
+
+  async getUserCommunityCount(req: Request, res: Response) {
+    try {
+      const userId = req.params.userId;
+      const counts = await communityService.getUserCommunityCount(userId);
+
+      return res.status(200).json({
+        success: true,
+        data: counts,
+        message: "User Chautari counts fetched successfully"
       });
     } catch (error: Error | any) {
       return res

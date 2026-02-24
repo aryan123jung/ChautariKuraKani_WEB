@@ -53,6 +53,18 @@ export class CommunityRepository {
     return { communities, total };
   }
 
+  async countByMember(userId: string) {
+    return await CommunityModel.countDocuments({
+      members: userId as any
+    });
+  }
+
+  async countByCreator(userId: string) {
+    return await CommunityModel.countDocuments({
+      creatorId: userId as any
+    });
+  }
+
   async join(communityId: string, userId: string) {
     return await CommunityModel.findByIdAndUpdate(
       communityId,
@@ -84,5 +96,11 @@ export class CommunityRepository {
 
   async deleteById(communityId: string) {
     return await CommunityModel.findByIdAndDelete(communityId);
+  }
+
+  async updateById(communityId: string, data: Partial<ICommunity>) {
+    return await CommunityModel.findByIdAndUpdate(communityId, data, { new: true })
+      .populate("creatorId", "firstName lastName username profileUrl")
+      .populate("members", "firstName lastName username profileUrl");
   }
 }

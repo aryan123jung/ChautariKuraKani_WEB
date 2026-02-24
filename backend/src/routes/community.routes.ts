@@ -8,6 +8,7 @@ const communityController = new CommunityController();
 
 router.get("/search", communityController.searchCommunities);
 router.get("/my", authorizedMiddleware, communityController.getMyCommunities);
+router.get("/count/:userId", communityController.getUserCommunityCount);
 router.get("/:communityId", communityController.getCommunityById);
 router.get("/:communityId/member-count", communityController.getMemberCount);
 router.get("/:communityId/posts", communityController.getCommunityPosts);
@@ -20,6 +21,12 @@ router.post(
 );
 router.post("/:communityId/join", authorizedMiddleware, communityController.joinCommunity);
 router.post("/:communityId/leave", authorizedMiddleware, communityController.leaveCommunity);
+router.put(
+  "/:communityId",
+  authorizedMiddleware,
+  uploads.single("communityProfileUrl"),
+  communityController.updateCommunity
+);
 router.delete("/:communityId", authorizedMiddleware, communityController.deleteCommunity);
 router.post(
   "/:communityId/posts",

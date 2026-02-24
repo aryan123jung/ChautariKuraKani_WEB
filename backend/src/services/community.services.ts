@@ -2,6 +2,8 @@ import { HttpError } from "../errors/http-error";
 import { CommunityRepository } from "../repositories/community.repository";
 import { UserRepository } from "../repositories/user.repository";
 import { PostRepository } from "../repositories/post.repository";
+import fs from "fs";
+import path from "path";
 
 const communityRepo = new CommunityRepository();
 const userRepo = new UserRepository();
@@ -134,6 +136,24 @@ export class CommunityService {
     };
   }
 
+  async getUserCommunityCount(userId: string) {
+    const user = await userRepo.getUserById(userId);
+    if (!user) {
+      throw new HttpError(404, "User not found");
+    }
+
+    const [joinedCount, createdCount] = await Promise.all([
+      communityRepo.countByMember(userId),
+      communityRepo.countByCreator(userId)
+    ]);
+
+    return {
+      joinedCount,
+      createdCount,
+      total: joinedCount
+    };
+  }
+
   async getMemberCount(communityId: string) {
     const community = await communityRepo.findById(communityId);
     if (!community) {
@@ -173,5 +193,66 @@ export class CommunityService {
     await postRepo.deleteByCommunityId(communityId);
     await communityRepo.deleteById(communityId);
     return true;
+  }
+
+  async updateCommunity(
+    currentUserId: string,
+    communityId: string,
+    payload: { name?: string; description?: string; profileUrl?: string }
+  ) {
+    const community = await communityRepo.findById(communityId);
+    if (!community) {
+      throw new HttpError(404, "Community not found");
+    }
+
+    const creatorId =
+      typeof community.creatorId === "string"
+        ? community.creatorId
+        : (community.creatorId as any)?._id?.toString?.() || community.creatorId.toString();
+
+    if (creatorId !== currentUserId) {
+      throw new HttpError(403, "Only Chautari creator can update this community");
+    }
+
+    const updateData: any = {};
+
+    if (payload.name && payload.name.trim()) {
+      const normalizedName = this.normalizeCommunityName(payload.name);
+      if (!normalizedName) {
+        throw new HttpError(400, "Invalid community name");
+      }
+      const newSlug = this.toSlug(normalizedName);
+      const existing = await communityRepo.findBySlug(newSlug);
+      if (existing && existing._id.toString() !== communityId) {
+        throw new HttpError(409, "Community name already in use");
+      }
+      updateData.name = normalizedName;
+      updateData.slug = newSlug;
+    }
+
+    if (typeof payload.description === "string") {
+      updateData.description = payload.description;
+    }
+
+    if (payload.profileUrl) {
+      if (community.profileUrl) {
+        const oldImagePath = path.resolve(
+          process.cwd(),
+          "uploads/chautari/profile",
+          community.profileUrl
+        );
+        if (fs.existsSync(oldImagePath)) {
+          fs.unlinkSync(oldImagePath);
+        }
+      }
+      updateData.profileUrl = payload.profileUrl;
+    }
+
+    const updated = await communityRepo.updateById(communityId, updateData);
+    if (!updated) {
+      throw new HttpError(404, "Community not found");
+    }
+
+    return updated;
   }
 }
