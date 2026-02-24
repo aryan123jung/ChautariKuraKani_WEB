@@ -7,6 +7,7 @@ const router = Router();
 const communityController = new CommunityController();
 
 router.get("/search", communityController.searchCommunities);
+router.get("/my", authorizedMiddleware, communityController.getMyCommunities);
 router.get("/:communityId", communityController.getCommunityById);
 router.get("/:communityId/member-count", communityController.getMemberCount);
 router.get("/:communityId/posts", communityController.getCommunityPosts);

@@ -51,7 +51,6 @@ const communitySchema = new Schema<ICommunity>(
   }
 );
 
-communitySchema.index({ slug: 1 }, { unique: true });
 communitySchema.index({ name: "text", slug: "text" });
 
 export const CommunityModel = mongoose.model<ICommunity>("Community", communitySchema);

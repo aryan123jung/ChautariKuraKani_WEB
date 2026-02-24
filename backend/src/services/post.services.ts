@@ -228,9 +228,25 @@ export class PostService {
         ? comment.userId
         : comment.userId.toString();
     const postOwnerId = this.getAuthorId(post);
+    let isChautariCreator = false;
+    const communityRef: any = (post as any).communityId;
+    if (communityRef) {
+      const communityId =
+        typeof communityRef === "string"
+          ? communityRef
+          : communityRef?._id?.toString?.() || communityRef.toString();
 
-    if (commentOwnerId !== userId && postOwnerId !== userId) {
-      throw new HttpError(403, "You can only delete your own comment");
+      const community = await communityRepo.findById(communityId);
+      if (community) {
+        isChautariCreator = this.getCommunityCreatorId(community) === userId;
+      }
+    }
+
+    const isCommentOwner = commentOwnerId === userId;
+    const isPostOwner = postOwnerId === userId;
+
+    if (!isCommentOwner && !isPostOwner && !isChautariCreator) {
+      throw new HttpError(403, "Not allowed to delete this comment");
     }
 
     const updatedPost = await postRepo.removeComment(postId, commentId);

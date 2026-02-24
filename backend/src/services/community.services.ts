@@ -115,6 +115,25 @@ export class CommunityService {
     return community;
   }
 
+  async getMyCommunities(userId: string, page?: string, size?: string) {
+    const { pageNumber, pageSize } = this.getPagination(page, size);
+    const { communities, total } = await communityRepo.listByMember(
+      userId,
+      pageNumber,
+      pageSize
+    );
+
+    return {
+      communities,
+      pagination: {
+        page: pageNumber,
+        size: pageSize,
+        totalCommunities: total,
+        totalPages: Math.ceil(total / pageSize)
+      }
+    };
+  }
+
   async getMemberCount(communityId: string) {
     const community = await communityRepo.findById(communityId);
     if (!community) {

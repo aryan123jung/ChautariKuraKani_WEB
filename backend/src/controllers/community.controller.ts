@@ -113,6 +113,33 @@ export class CommunityController {
     }
   }
 
+  async getMyCommunities(req: Request, res: Response) {
+    try {
+      const userId = req.user?._id?.toString();
+      if (!userId) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
+
+      const { page, size }: QueryParams = req.query;
+      const { communities, pagination } = await communityService.getMyCommunities(
+        userId,
+        page,
+        size
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: communities,
+        pagination,
+        message: "My Chautari fetched successfully"
+      });
+    } catch (error: Error | any) {
+      return res
+        .status(error.statusCode || 500)
+        .json({ success: false, message: error.message || "Internal Server Error" });
+    }
+  }
+
   async getCommunityById(req: Request, res: Response) {
     try {
       const community = await communityService.getCommunityById(req.params.communityId);

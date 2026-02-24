@@ -36,6 +36,23 @@ export class CommunityRepository {
     return { communities, total };
   }
 
+  async listByMember(userId: string, page: number, size: number) {
+    const filter: QueryFilter<ICommunity> = {
+      members: userId as any
+    };
+
+    const [communities, total] = await Promise.all([
+      CommunityModel.find(filter)
+        .sort({ createdAt: -1 })
+        .skip((page - 1) * size)
+        .limit(size)
+        .populate("creatorId", "firstName lastName username profileUrl"),
+      CommunityModel.countDocuments(filter)
+    ]);
+
+    return { communities, total };
+  }
+
   async join(communityId: string, userId: string) {
     return await CommunityModel.findByIdAndUpdate(
       communityId,
