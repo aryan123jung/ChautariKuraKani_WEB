@@ -116,6 +116,12 @@ export interface IPostRepository {
     page: number;
     size: number;
   }): Promise<{ posts: IPost[]; total: number }>;
+  findAllByCommunity(
+    communityId: string,
+    page: number,
+    size: number
+  ): Promise<{ posts: IPost[]; total: number }>;
+  deleteByCommunityId(communityId: string): Promise<number>;
   delete(id: string): Promise<boolean>;
 }
 
@@ -124,6 +130,7 @@ export class PostRepository implements IPostRepository {
   private populatePost<T extends Query<any, any>>(query: T): T {
     return query
       .populate("authorId", "firstName lastName email profileUrl profileImage")
+      .populate("communityId", "name slug")
       .populate(
         "comments.userId",
         "firstName lastName username profileUrl profileImage"
@@ -207,8 +214,35 @@ export class PostRepository implements IPostRepository {
     return { posts, total };
   }
 
+  async findAllByCommunity(
+    communityId: string,
+    page: number,
+    size: number
+  ): Promise<{ posts: IPost[]; total: number }> {
+    const filter: QueryFilter<IPost> = {
+      communityId: communityId as any
+    };
+
+    const [posts, total] = await Promise.all([
+      this.populatePost(
+        PostModel.find(filter)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * size)
+          .limit(size)
+      ),
+      PostModel.countDocuments(filter)
+    ]);
+
+    return { posts, total };
+  }
+
   async delete(id: string): Promise<boolean> {
     const result = await PostModel.findByIdAndDelete(id).exec();
     return result !== null;
+  }
+
+  async deleteByCommunityId(communityId: string): Promise<number> {
+    const result = await PostModel.deleteMany({ communityId: communityId as any });
+    return result.deletedCount || 0;
   }
 }

@@ -109,8 +109,12 @@ export class PostController {
   async deleteOnePost(req: Request, res: Response) {
     try {
       const postId = req.params.id;
+      const userId = req.user?._id?.toString();
+      if (!userId) {
+        return res.status(401).json({ success: false, message: "Unauthorized" });
+      }
 
-      const deleted = await postService.deletePost(postId);
+      const deleted = await postService.deletePost(postId, userId);
 
       return res.status(200).json({
         success: true,

@@ -23,6 +23,11 @@ const schema = new Schema<IPost>(
     caption: { type: String },
     mediaUrl: { type: String },
     mediaType: { type: String, enum: ["image", "video"] },
+    communityId: {
+      type: Schema.Types.ObjectId,
+      ref: "Community",
+      required: false
+    },
 
     authorId: {
       type: Schema.Types.ObjectId,

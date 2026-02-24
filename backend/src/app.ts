@@ -11,6 +11,7 @@ import friendRequestRoutes from './routes/friend-request.routes';
 import notificationRoutes from './routes/notification.routes';
 import messageRoutes from './routes/message.routes';
 import callRoutes from './routes/call.routes';
+import communityRoutes from './routes/community.routes';
 
 dotenv.config();
 console.log(process.env.PORT);
@@ -33,6 +34,7 @@ app.use('/api/friends', friendRequestRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/calls', callRoutes);
+app.use('/api/chautari', communityRoutes);
 
 
 app.use((err: Error, req: Request, res: Response, next: Function) => {

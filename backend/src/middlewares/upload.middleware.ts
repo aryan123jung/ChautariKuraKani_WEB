@@ -67,6 +67,10 @@ const storage = multer.diskStorage({
       }
     }
 
+    if (file.fieldname === "communityProfileUrl") {
+      folder = "uploads/chautari/profile";
+    }
+
     const uploadPath = path.resolve(process.cwd(), folder);
 
     if (!fs.existsSync(uploadPath)) {
@@ -87,7 +91,11 @@ const fileFilter = (
   file: Express.Multer.File,
   cb: multer.FileFilterCallback
 ) => {
-  if (file.fieldname === "profileUrl" || file.fieldname === "coverUrl") {
+  if (
+    file.fieldname === "profileUrl" ||
+    file.fieldname === "coverUrl" ||
+    file.fieldname === "communityProfileUrl"
+  ) {
     if (!file.mimetype.startsWith("image/")) {
       return cb(new HttpError(400, "Only image files are allowed"));
     }

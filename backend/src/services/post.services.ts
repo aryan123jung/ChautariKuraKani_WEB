@@ -4,10 +4,12 @@ import fs from "fs";
 import path from "path";
 import { NotificationService } from "./notification.services";
 import { UserRepository } from "../repositories/user.repository";
+import { CommunityRepository } from "../repositories/community.repository";
 
 const postRepo = new PostRepository();
 const notificationService = new NotificationService();
 const userRepo = new UserRepository();
+const communityRepo = new CommunityRepository();
 
 export class PostService {
   private getAuthorId(post: any): string {
@@ -16,7 +18,25 @@ export class PostService {
       : (post.authorId as any)?._id?.toString?.() || post.authorId.toString();
   }
 
+  private getCommunityCreatorId(community: any): string {
+    return typeof community.creatorId === "string"
+      ? community.creatorId
+      : (community.creatorId as any)?._id?.toString?.() || community.creatorId.toString();
+  }
+
   async createPost(data: any) {
+    if (data.communityId) {
+      const community = await communityRepo.findById(data.communityId);
+      if (!community) {
+        throw new HttpError(404, "Community not found");
+      }
+
+      const isJoined = await communityRepo.isMember(data.communityId, data.authorId);
+      if (!isJoined) {
+        throw new HttpError(403, "Join this Chautari first to post");
+      }
+    }
+
     return await postRepo.create(data);
   }
 
@@ -47,6 +67,31 @@ export class PostService {
       throw new HttpError(404, "Post not found");
     }
     return post;
+  }
+
+  async getPostsByCommunity(communityId: string, page?: string, size?: string) {
+    const community = await communityRepo.findById(communityId);
+    if (!community) {
+      throw new HttpError(404, "Community not found");
+    }
+
+    const currentPage = page ? parseInt(page) : 1;
+    const pageSize = size ? parseInt(size) : 10;
+
+    const { posts, total } = await postRepo.findAllByCommunity(
+      communityId,
+      currentPage,
+      pageSize
+    );
+
+    const pagination = {
+      page: currentPage,
+      size: pageSize,
+      total,
+      totalPages: Math.ceil(total / pageSize)
+    };
+
+    return { posts, pagination };
   }
 
   async updatePost(id: string, userId: string, data: any) {
@@ -196,11 +241,32 @@ export class PostService {
     return updatedPost;
   }
 
-  async deletePost(id: string) {
+  async deletePost(id: string, userId: string) {
     const post = await postRepo.findById(id);
     if (!post) {
       throw new HttpError(404, "Post not found");
     }
+
+    const authorId = this.getAuthorId(post);
+    let canDelete = authorId === userId;
+
+    const communityRef: any = (post as any).communityId;
+    if (!canDelete && communityRef) {
+      const communityId =
+        typeof communityRef === "string"
+          ? communityRef
+          : communityRef?._id?.toString?.() || communityRef.toString();
+
+      const community = await communityRepo.findById(communityId);
+      if (community) {
+        canDelete = this.getCommunityCreatorId(community) === userId;
+      }
+    }
+
+    if (!canDelete) {
+      throw new HttpError(403, "Only post author or Chautari creator can delete this post");
+    }
+
     return await postRepo.delete(id);
   }
 }
