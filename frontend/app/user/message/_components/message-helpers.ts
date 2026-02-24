@@ -1,4 +1,4 @@
-import type { FriendUser, MessageUser } from "./message-types";
+import type { FriendUser, MessageUser } from "../schema";
 
 export const getUserId = (user: string | MessageUser | FriendUser | null | undefined) => {
   if (!user) return "";

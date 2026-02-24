@@ -1,6 +1,6 @@
 "use client";
 
-import type { ConversationItem, FriendUser } from "./message-types";
+import type { ConversationItem, FriendUser } from "../schema";
 import { buildProfileImageUrl, getUserAvatar, getUserId, getUserName } from "./message-helpers";
 
 type Props = {

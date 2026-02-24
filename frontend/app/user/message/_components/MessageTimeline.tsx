@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import type { CallHistoryItem, TimelineItem } from "./message-types";
+import type { CallHistoryItem, TimelineItem } from "../schema";
 import { getUserId } from "./message-helpers";
 
 type Props = {

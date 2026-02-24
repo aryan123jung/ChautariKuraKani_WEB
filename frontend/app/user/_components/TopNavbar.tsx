@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { handleSearchUsers } from "@/lib/actions/auth-action";
+import { handleSearchChautari } from "@/lib/actions/chautari-action";
 import {
   handleAcceptFriendRequest,
   handleGetIncomingFriendRequests,
@@ -18,69 +19,15 @@ import {
   handleMarkNotificationRead,
 } from "@/lib/actions/notification-action";
 import { toast } from "react-toastify";
-
-type Props = {
-  onMenuClick: () => void;
-};
-
-type SearchUser = {
-  _id: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  profileUrl?: string;
-};
-
-type FriendUser = {
-  _id?: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  profileUrl?: string;
-  profileImage?: string;
-};
-
-type IncomingFriendRequest = {
-  _id: string;
-  fromUserId: string | FriendUser;
-  toUserId: string | FriendUser;
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
-  createdAt?: string;
-};
-
-type NotificationItem = {
-  _id: string;
-  actorUserId?: string | FriendUser;
-  type:
-    | "FRIEND_REQUEST_SENT"
-    | "FRIEND_REQUEST_ACCEPTED"
-    | "POST_LIKED"
-    | "POST_COMMENTED";
-  entityType?: string;
-  entityId?: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt?: string;
-};
-
-type MessageEvent = {
-  _id: string;
-  text?: string;
-  senderId?: string | FriendUser;
-  conversationId?: string;
-  createdAt?: string;
-};
-
-type MessageAlertItem = {
-  id: string;
-  senderName: string;
-  senderAvatar?: string | null;
-  text: string;
-  conversationId?: string;
-  isRead: boolean;
-  createdAt?: string;
-};
+import type {
+  IncomingFriendRequest,
+  MessageAlertItem,
+  MessageEvent,
+  NavbarProps,
+  NotificationItem,
+  SearchCommunity,
+  SearchUser,
+} from "./schema";
 
 const getAuthTokenFromCookie = () => {
   if (typeof document === "undefined") return null;
@@ -101,7 +48,7 @@ const getCurrentUserIdFromCookie = () => {
   }
 };
 
-export default function TopNavbar({ onMenuClick }: Props) {
+export default function TopNavbar({ onMenuClick }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const searchWrapperRef = useRef<HTMLDivElement | null>(null);
@@ -124,6 +71,8 @@ export default function TopNavbar({ onMenuClick }: Props) {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [results, setResults] = useState<SearchUser[]>([]);
+  const [communityResults, setCommunityResults] = useState<SearchCommunity[]>([]);
+  const [searchMode, setSearchMode] = useState<"user" | "community">("user");
   const [isSearching, setIsSearching] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
@@ -153,6 +102,12 @@ export default function TopNavbar({ onMenuClick }: Props) {
     if (!profileUrl) return null;
     const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6060";
     return `${backendUrl}/uploads/profile/${profileUrl}`;
+  };
+
+  const communityImageUrl = (profileUrl?: string | null) => {
+    if (!profileUrl) return null;
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6060";
+    return `${backendUrl}/uploads/chautari/profile/${profileUrl}`;
   };
 
   const playNotificationSound = () => {
@@ -242,13 +197,17 @@ export default function TopNavbar({ onMenuClick }: Props) {
 
   const triggerSearch = (value: string) => {
     const trimmed = value.trim();
+    const isCommunitySearch = trimmed.toLowerCase().startsWith("c/");
+    setSearchMode(isCommunitySearch ? "community" : "user");
 
     if (searchTimerRef.current) {
       clearTimeout(searchTimerRef.current);
     }
 
-    if (trimmed.length < 2) {
+    const minLength = isCommunitySearch ? 3 : 2;
+    if (trimmed.length < minLength) {
       setResults([]);
+      setCommunityResults([]);
       setIsSearching(false);
       setIsDropdownOpen(false);
       return;
@@ -258,10 +217,23 @@ export default function TopNavbar({ onMenuClick }: Props) {
     const currentRequestId = ++requestIdRef.current;
 
     searchTimerRef.current = setTimeout(async () => {
+      if (isCommunitySearch) {
+        const response = await handleSearchChautari(trimmed, 1, 8);
+        if (currentRequestId !== requestIdRef.current) return;
+        setCommunityResults(
+          response.success ? ((response.data || []) as SearchCommunity[]) : []
+        );
+        setResults([]);
+        setIsSearching(false);
+        setIsDropdownOpen(true);
+        return;
+      }
+
       const response = await handleSearchUsers(trimmed, 1, 8);
       if (currentRequestId !== requestIdRef.current) return;
 
       setResults(response.success ? ((response.data || []) as SearchUser[]) : []);
+      setCommunityResults([]);
       setIsSearching(false);
       setIsDropdownOpen(true);
     }, 350);
@@ -280,6 +252,22 @@ export default function TopNavbar({ onMenuClick }: Props) {
   const renderUserName = (user: SearchUser) => {
     const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
     return fullName || user.username || "User";
+  };
+
+  const renderCommunityName = (community: SearchCommunity) => {
+    if (community.name) {
+      return community.name.toLowerCase().startsWith("c/")
+        ? community.name
+        : `c/${community.name}`;
+    }
+    if (community.slug) return `c/${community.slug}`;
+    return "c/community";
+  };
+
+  const onSelectCommunity = (community: SearchCommunity) => {
+    setSearchTerm(renderCommunityName(community));
+    setIsDropdownOpen(false);
+    router.push(`/user/chautari?communityId=${community._id}`);
   };
 
   const getRequestSender = (request: IncomingFriendRequest) => {
@@ -503,10 +491,12 @@ export default function TopNavbar({ onMenuClick }: Props) {
           />
           <input
             type="text"
-            placeholder="Search users..."
+            placeholder="Search users or c/chautari..."
             value={searchTerm}
             onFocus={() => {
-              if (searchTerm.trim().length >= 2) setIsDropdownOpen(true);
+              const trimmed = searchTerm.trim();
+              const minLength = trimmed.toLowerCase().startsWith("c/") ? 3 : 2;
+              if (trimmed.length >= minLength) setIsDropdownOpen(true);
             }}
             onChange={(e) => {
               const nextValue = e.target.value;
@@ -520,7 +510,9 @@ export default function TopNavbar({ onMenuClick }: Props) {
             }`}
           />
 
-          {isDropdownOpen && searchTerm.trim().length >= 2 && (
+          {isDropdownOpen &&
+            searchTerm.trim().length >=
+              (searchTerm.trim().toLowerCase().startsWith("c/") ? 3 : 2) && (
             <div
               className={`absolute mt-2 max-h-80 w-full overflow-y-auto rounded-xl border shadow-lg ${
                 theme === "dark"
@@ -534,13 +526,28 @@ export default function TopNavbar({ onMenuClick }: Props) {
                 </div>
               )}
 
-              {!isSearching && results.length === 0 && (
+              {!isSearching &&
+                searchMode === "user" &&
+                results.length === 0 && (
                 <div className={`px-4 py-3 text-sm ${theme === "dark" ? "text-zinc-400" : "text-gray-500"}`}>
                   No users found.
                 </div>
               )}
 
               {!isSearching &&
+                searchMode === "community" &&
+                communityResults.length === 0 && (
+                  <div
+                    className={`px-4 py-3 text-sm ${
+                      theme === "dark" ? "text-zinc-400" : "text-gray-500"
+                    }`}
+                  >
+                    No chautari found.
+                  </div>
+                )}
+
+              {!isSearching &&
+                searchMode === "user" &&
                 results.map((user) => {
                   const imageUrl = profileImageUrl(user.profileUrl);
 
@@ -570,6 +577,49 @@ export default function TopNavbar({ onMenuClick }: Props) {
                         </p>
                         <p className={`truncate text-xs ${theme === "dark" ? "text-zinc-400" : "text-gray-500"}`}>
                           @{user.username || "unknown"}
+                        </p>
+                      </div>
+                    </button>
+                  );
+                })}
+
+              {!isSearching &&
+                searchMode === "community" &&
+                communityResults.map((community) => {
+                  const imageUrl = communityImageUrl(community.profileUrl);
+                  const name = renderCommunityName(community);
+                  return (
+                    <button
+                      key={community._id}
+                      onClick={() => onSelectCommunity(community)}
+                      className={`flex w-full items-center gap-3 px-4 py-2 text-left transition ${
+                        theme === "dark" ? "hover:bg-zinc-800" : "hover:bg-gray-100"
+                      }`}
+                    >
+                      <div className="h-9 w-9 overflow-hidden rounded-full bg-gray-300 dark:bg-zinc-700">
+                        {imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={imageUrl} alt={name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-zinc-700 dark:text-zinc-200">
+                            {name.slice(0, 1).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p
+                          className={`truncate text-sm font-semibold ${
+                            theme === "dark" ? "text-zinc-100" : "text-gray-900"
+                          }`}
+                        >
+                          {name}
+                        </p>
+                        <p
+                          className={`truncate text-xs ${
+                            theme === "dark" ? "text-zinc-400" : "text-gray-500"
+                          }`}
+                        >
+                          {community.description || "No description"}
                         </p>
                       </div>
                     </button>

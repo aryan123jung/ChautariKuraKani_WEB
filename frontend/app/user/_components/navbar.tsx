@@ -3,12 +3,7 @@
 import { useState } from "react";
 import TopNavbar from "./TopNavbar";
 import SideNavbar from "./SideNavbar";
-
-type UserData = {
-  firstName: string;
-  lastName: string;
-  profileUrl?: string;
-};
+import type { UserData } from "./schema";
 
 export default function Navbar({ user }: { user: UserData }) {
   const [open, setOpen] = useState(false);

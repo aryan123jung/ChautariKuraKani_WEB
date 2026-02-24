@@ -1,20 +1,7 @@
 "use client";
 
 import Link from "next/link";
-
-type FriendUser = {
-  _id?: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  profileUrl?: string;
-};
-
-type ConversationItem = {
-  _id?: string;
-  participants?: Array<string | FriendUser>;
-  lastMessage?: string;
-};
+import type { HomeConversationItem, HomeFriendUser } from "../schema";
 
 const buildProfileImageUrl = (profileUrl?: string) => {
   if (!profileUrl) return null;
@@ -22,12 +9,12 @@ const buildProfileImageUrl = (profileUrl?: string) => {
   return `${backendUrl}/uploads/profile/${profileUrl}`;
 };
 
-const getDisplayName = (friend: FriendUser) => {
+const getDisplayName = (friend: HomeFriendUser) => {
   const name = `${friend.firstName || ""} ${friend.lastName || ""}`.trim();
   return name || friend.username || "User";
 };
 
-const getUserId = (user?: string | FriendUser) => {
+const getUserId = (user?: string | HomeFriendUser) => {
   if (!user) return "";
   if (typeof user === "string") return user;
   return user._id || "";
@@ -38,8 +25,8 @@ export default function LeftSidebar({
   conversations = [],
   currentUserId = "",
 }: {
-  friends?: FriendUser[];
-  conversations?: ConversationItem[];
+  friends?: HomeFriendUser[];
+  conversations?: HomeConversationItem[];
   currentUserId?: string;
 }) {
   const messageFriends = friends.slice(0, 10);

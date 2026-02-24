@@ -20,7 +20,10 @@ import MessageTimeline from "./MessageTimeline";
 import MessageComposer from "./MessageComposer";
 import type {
   ActiveCall,
+  CallAnswerPayload,
+  CallCandidatePayload,
   CallHistoryItem,
+  CallOfferPayload,
   CallType,
   ConversationItem,
   FriendUser,
@@ -28,7 +31,7 @@ import type {
   MessageItem,
   TimelineItem,
   OutgoingCall,
-} from "./message-types";
+} from "../schema";
 import {
   buildProfileImageUrl,
   formatCallDuration,
@@ -37,24 +40,6 @@ import {
   getUserId,
   getUserName,
 } from "./message-helpers";
-
-type CallOfferPayload = {
-  callId: string;
-  fromUserId: string;
-  offer: RTCSessionDescriptionInit;
-};
-
-type CallAnswerPayload = {
-  callId: string;
-  fromUserId: string;
-  answer: RTCSessionDescriptionInit;
-};
-
-type CallCandidatePayload = {
-  callId: string;
-  fromUserId: string;
-  candidate: RTCIceCandidateInit;
-};
 
 const CALL_ICE_SERVERS: RTCIceServer[] = [{ urls: "stun:stun.l.google.com:19302" }];
 

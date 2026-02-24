@@ -1,20 +1,7 @@
 "use client";
 
 import Link from "next/link";
-
-type FriendUser = {
-  _id?: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  profileUrl?: string;
-};
-
-type FriendsModalProps = {
-  isOpen: boolean;
-  onClose: () => void;
-  friends: FriendUser[];
-};
+import type { FriendsModalProps } from "../schema";
 
 const profileImageUrl = (profileUrl?: string) => {
   if (!profileUrl) return null;

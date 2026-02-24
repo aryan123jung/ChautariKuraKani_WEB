@@ -3,20 +3,9 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clearAuthCookies } from "@/lib/cookie";
+import type { SideNavbarProps } from "./schema";
 
-type UserData = {
-  firstName: string;
-  lastName: string;
-  profileUrl?: string;
-};
-
-type Props = {
-  open: boolean;
-  onClose: () => void;
-  user: UserData;
-};
-
-export default function SideNavbar({ open, onClose, user }: Props) {
+export default function SideNavbar({ open, onClose, user }: SideNavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;

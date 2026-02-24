@@ -12,22 +12,7 @@ import {
 } from "@/lib/actions/friend-action";
 import { toast } from "react-toastify";
 import FriendsModal from "./_components/FriendsModal";
-
-type FriendUser = {
-  _id?: string;
-  firstName?: string;
-  lastName?: string;
-  username?: string;
-  profileUrl?: string;
-};
-
-type FriendRequestItem = {
-  _id: string;
-  fromUserId: string | FriendUser;
-  toUserId: string | FriendUser;
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
-  createdAt?: string;
-};
+import type { FriendRequestItem, FriendUser } from "./schema";
 
 const getUserFromField = (value: string | FriendUser) => {
   if (!value || typeof value === "string") return null;

@@ -70,3 +70,21 @@ export type ActiveCall = {
 export type TimelineItem =
   | { kind: "message"; at: number; item: MessageItem }
   | { kind: "call"; at: number; item: CallHistoryItem };
+
+export type CallOfferPayload = {
+  callId: string;
+  fromUserId: string;
+  offer: RTCSessionDescriptionInit;
+};
+
+export type CallAnswerPayload = {
+  callId: string;
+  fromUserId: string;
+  answer: RTCSessionDescriptionInit;
+};
+
+export type CallCandidatePayload = {
+  callId: string;
+  fromUserId: string;
+  candidate: RTCIceCandidateInit;
+};

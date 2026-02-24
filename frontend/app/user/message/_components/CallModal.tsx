@@ -2,28 +2,7 @@
 
 import type { RefObject } from "react";
 import { Mic, MicOff, Phone, PhoneOff, Video } from "lucide-react";
-
-type CallType = "audio" | "video";
-
-type IncomingCall = {
-  callId: string;
-  callerId: string;
-  calleeId: string;
-  callType: CallType;
-};
-
-type OutgoingCall = {
-  callId: string;
-  calleeId: string;
-  callType: CallType;
-};
-
-type ActiveCall = {
-  callId: string;
-  peerUserId: string;
-  callType: CallType;
-  startedAt: number;
-};
+import type { ActiveCall, IncomingCall, OutgoingCall } from "../schema";
 
 type Props = {
   incomingCall: IncomingCall | null;

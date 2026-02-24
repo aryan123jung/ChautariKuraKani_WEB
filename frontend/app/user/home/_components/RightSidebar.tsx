@@ -49,19 +49,9 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import {User} from "lucide-react";
+import type { ChatMessage, HomeUserData } from "../schema";
 
-type UserData = {
-  firstName: string;
-  lastName: string;
-  profileUrl?: string;
-};
-
-type ChatMessage = {
-  role: "user" | "ai";
-  text: string;
-};
-
-export default function RightSidebar({ user }: { user: UserData }) {
+export default function RightSidebar({ user }: { user: HomeUserData }) {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "ai", text: "Hi!! How can I help you? 😄" },
