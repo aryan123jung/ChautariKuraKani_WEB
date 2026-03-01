@@ -121,6 +121,11 @@ export interface IPostRepository {
     page: number,
     size: number
   ): Promise<{ posts: IPost[]; total: number }>;
+  findAllByAuthor(
+    authorId: string,
+    page: number,
+    size: number
+  ): Promise<{ posts: IPost[]; total: number }>;
   deleteByCommunityId(communityId: string): Promise<number>;
   delete(id: string): Promise<boolean>;
 }
@@ -221,6 +226,28 @@ export class PostRepository implements IPostRepository {
   ): Promise<{ posts: IPost[]; total: number }> {
     const filter: QueryFilter<IPost> = {
       communityId: communityId as any
+    };
+
+    const [posts, total] = await Promise.all([
+      this.populatePost(
+        PostModel.find(filter)
+          .sort({ createdAt: -1 })
+          .skip((page - 1) * size)
+          .limit(size)
+      ),
+      PostModel.countDocuments(filter)
+    ]);
+
+    return { posts, total };
+  }
+
+  async findAllByAuthor(
+    authorId: string,
+    page: number,
+    size: number
+  ): Promise<{ posts: IPost[]; total: number }> {
+    const filter: QueryFilter<IPost> = {
+      authorId: authorId as any
     };
 
     const [posts, total] = await Promise.all([

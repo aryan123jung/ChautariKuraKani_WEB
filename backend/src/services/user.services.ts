@@ -11,6 +11,10 @@ import { sendEmail } from "../configs/email";
 
 
 let userRepository = new UserRepository();
+const mobileResetCodeStore = new Map<
+  string,
+  { userId: string; code: string; expiresAt: number }
+>();
 export class UserService {
     async registerUser(userData: CreateUserDto) {
         const checkEmail = await userRepository.getUserByEmail(userData.email);
@@ -44,6 +48,9 @@ export class UserService {
         const user = await userRepository.getUserByEmail(loginData.email);
         if (!user) {
             throw new HttpError(404, "User not found");
+        }
+        if (user.accountStatus === "banned") {
+            throw new HttpError(403, "Your account is banned");
         }
         const validPassword = await bcryptjs.compare(loginData.password, user.password);
         if (!validPassword) {
@@ -245,23 +252,32 @@ export class UserService {
         const user = await userRepository.getUserByEmail(email);
         if (!user) throw new HttpError(404, "User not found");
 
-        // Generate JWT token valid for 1 hour
-        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
-
-        let resetBaseUrl: string;
-
         if (platform === "mobile") {
-            // For Flutter/app links, allow explicit resetUrl from client first.
-            resetBaseUrl =
-            resetUrl ||
-            process.env.MOBILE_RESET_URL ||
-            `${process.env.CLIENT_URL || "http://localhost:3000"}/reset-password`;
-        } else {
-            // Web link stays the same
-            const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
-            resetBaseUrl = `${CLIENT_URL}/reset-password`;
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+            mobileResetCodeStore.set(user.email.toLowerCase(), {
+                userId: user._id.toString(),
+                code,
+                expiresAt
+            });
+
+            const html = `
+                <p>You requested to reset your password for ChautariKuraKani.</p>
+                <p>Your 6-digit reset code is:</p>
+                <h2>${code}</h2>
+                <p>This code expires in 10 minutes.</p>
+                <p>If you did not request this, you can safely ignore this email.</p>
+            `;
+            const text = `Your ChautariKuraKani password reset code is ${code}. It expires in 10 minutes.`;
+
+            await sendEmail(user.email, "Password Reset Code", html, text);
+            return user;
         }
 
+        // Web flow unchanged
+        const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: "1h" });
+        const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:3000";
+        const resetBaseUrl = `${CLIENT_URL}/reset-password`;
         const separator = resetBaseUrl.includes("?") ? "&" : "?";
         const resetLink = `${resetBaseUrl}${separator}token=${encodeURIComponent(token)}`;
 
@@ -298,6 +314,57 @@ export class UserService {
     } catch (err) {
       throw new HttpError(400, "Invalid or expired token");
     }
+  }
+
+  async resetPasswordWithCode(email?: string, code?: string, newPassword?: string) {
+    if (!email || !code || !newPassword) {
+      throw new HttpError(400, "Email, code and new password are required");
+    }
+
+    const key = email.toLowerCase();
+    const stored = mobileResetCodeStore.get(key);
+    if (!stored) {
+      throw new HttpError(400, "Invalid or expired code");
+    }
+    if (stored.expiresAt < Date.now()) {
+      mobileResetCodeStore.delete(key);
+      throw new HttpError(400, "Invalid or expired code");
+    }
+    if (stored.code !== code) {
+      throw new HttpError(400, "Invalid or expired code");
+    }
+
+    const user = await userRepository.getUserById(stored.userId);
+    if (!user || user.email.toLowerCase() !== key) {
+      mobileResetCodeStore.delete(key);
+      throw new HttpError(404, "User not found");
+    }
+
+    const hashedPassword = await bcryptjs.hash(newPassword, 10);
+    await userRepository.updateUser(stored.userId, { password: hashedPassword });
+    mobileResetCodeStore.delete(key);
+    return true;
+  }
+
+  async verifyResetPasswordMobileCode(email?: string, code?: string) {
+    if (!email || !code) {
+      throw new HttpError(400, "Email and code are required");
+    }
+
+    const key = email.toLowerCase();
+    const stored = mobileResetCodeStore.get(key);
+    if (!stored) {
+      throw new HttpError(400, "Invalid or expired code");
+    }
+    if (stored.expiresAt < Date.now()) {
+      mobileResetCodeStore.delete(key);
+      throw new HttpError(400, "Invalid or expired code");
+    }
+    if (stored.code !== code) {
+      throw new HttpError(400, "Invalid or expired code");
+    }
+
+    return true;
   }
 
 }

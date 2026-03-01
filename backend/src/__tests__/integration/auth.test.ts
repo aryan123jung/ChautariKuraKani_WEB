@@ -51,14 +51,15 @@ import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../../configs";
 
 describe("AUTH CONTROLLER - Integration Tests", () => {
+    const timestamp = Date.now();
 
     const normalUser = {
         firstName: "John",
         lastName: "Doe",
-        email: "john@test.com",
+        email: `john_${timestamp}@test.com`,
         password: "password123",
         confirmPassword: "password123",
-        username: "johnny"
+        username: `johnny_${timestamp}`
     };
 
     let token: string;
@@ -216,6 +217,37 @@ describe("AUTH CONTROLLER - Integration Tests", () => {
             .send({ newPassword: "newpass123" });
 
         expect(res.status).toBeGreaterThanOrEqual(400);
+    });
+
+    it("16. Should fail search users without token", async () => {
+        const res = await request(app).get("/api/auth/users");
+        expect(res.status).toBe(401);
+    });
+
+    it("17. Should search users with valid token", async () => {
+        const res = await request(app)
+            .get("/api/auth/users?page=1&size=5&search=john")
+            .set("Authorization", `Bearer ${token}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body.success).toBe(true);
+        expect(res.body.pagination).toBeDefined();
+    });
+
+    it("18. Should fail mobile code verification with missing body", async () => {
+        const res = await request(app)
+            .post("/api/auth/verify-reset-password-mobile-code")
+            .send({});
+
+        expect(res.status).toBe(400);
+    });
+
+    it("19. Should fail mobile reset with missing body", async () => {
+        const res = await request(app)
+            .post("/api/auth/reset-password-mobile-code")
+            .send({});
+
+        expect(res.status).toBe(400);
     });
 
 });

@@ -1,9 +1,11 @@
 import { CreateUserDto, UpdateUserDto } from "../../dtos/user.dtos";
 import { HttpError } from "../../errors/http-error";
+import { PostRepository } from "../../repositories/post.repository";
 import { UserRepository } from "../../repositories/user.repository";
 import bcryptjs from "bcryptjs";
 
 let userRepository = new UserRepository();
+let postRepository = new PostRepository();
 export class AdminUserService{
     async createUser(userData: CreateUserDto){
         const checkEmail = await userRepository.getUserByEmail(userData.email);
@@ -28,6 +30,33 @@ export class AdminUserService{
         }
         return user;
     }
+
+    async getUserProfileWithPosts(userId: string, page?: string, size?: string) {
+        const user = await userRepository.getUserById(userId);
+        if (!user) {
+            throw new HttpError(404, "User not found");
+        }
+
+        const pageNumber = page ? parseInt(page) : 1;
+        const pageSize = size ? parseInt(size) : 10;
+
+        const { posts, total } = await postRepository.findAllByAuthor(
+            userId,
+            pageNumber,
+            pageSize
+        );
+
+        return {
+            user,
+            posts,
+            pagination: {
+                page: pageNumber,
+                size: pageSize,
+                totalPosts: total,
+                totalPages: Math.ceil(total / pageSize)
+            }
+        };
+    }
     async deleteOneUser(userId: string){
         const user = await userRepository.getUserById(userId);
         if(!user){
@@ -38,6 +67,58 @@ export class AdminUserService{
             throw new HttpError(500,"Failed to delete user");
         }
         return result;
+    }
+
+    async updateUserStatus(
+        userId: string,
+        action: "suspend" | "unsuspend" | "ban" | "unban" | "delete",
+        suspensionDays?: number
+    ){
+        const user = await userRepository.getUserById(userId);
+        if(!user){
+            throw new HttpError(404, "User not found");
+        }
+
+        if (action === "delete") {
+            const deleted = await userRepository.deleteUser(userId);
+            if (!deleted) {
+                throw new HttpError(500, "Failed to delete user");
+            }
+            return { deleted: true };
+        }
+
+        const updateData: any = {};
+
+        if (action === "suspend") {
+            updateData.accountStatus = "suspended";
+            if (suspensionDays) {
+                const until = new Date();
+                until.setDate(until.getDate() + suspensionDays);
+                updateData.suspensionUntil = until;
+            }
+        }
+
+        if (action === "unsuspend") {
+            updateData.accountStatus = "active";
+            updateData.suspensionUntil = undefined;
+        }
+
+        if (action === "ban") {
+            updateData.accountStatus = "banned";
+            updateData.suspensionUntil = undefined;
+        }
+
+        if (action === "unban") {
+            updateData.accountStatus = "active";
+            updateData.suspensionUntil = undefined;
+        }
+
+        const updatedUser = await userRepository.updateUser(userId, updateData);
+        if(!updatedUser){
+            throw new HttpError(500,"Failed to update user status");
+        }
+
+        return updatedUser;
     }
 
     async updateOneUser(userId: string,updateData: UpdateUserDto){

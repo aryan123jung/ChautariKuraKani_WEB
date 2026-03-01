@@ -207,4 +207,32 @@ export class AuthController {
         }
     }
 
+    async resetPasswordMobileCode(req: Request, res: Response) {
+        try {
+            const { email, code, newPassword } = req.body;
+            await userService.resetPasswordWithCode(email, code, newPassword);
+            return res.status(200).json(
+                { success: true, message: "Password has been reset successfully." }
+            );
+        } catch (error: Error | any) {
+            return res.status(error.statusCode ?? 500).json(
+                { success: false, message: error.message || "Internal Server Error" }
+            );
+        }
+    }
+
+    async verifyResetPasswordMobileCode(req: Request, res: Response) {
+        try {
+            const { email, code } = req.body;
+            await userService.verifyResetPasswordMobileCode(email, code);
+            return res.status(200).json(
+                { success: true, message: "Code verified" }
+            );
+        } catch (error: Error | any) {
+            return res.status(error.statusCode ?? 500).json(
+                { success: false, message: error.message || "Internal Server Error" }
+            );
+        }
+    }
+
 }

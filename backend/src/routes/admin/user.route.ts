@@ -60,6 +60,8 @@ router.post(
 
 router.get("/", adminUserController.getAllUser);
 
+router.get("/:id/profile", adminUserController.getUserProfile);
+
 router.get("/:id", adminUserController.getUserById);
 
 router.put("/:id",
@@ -69,8 +71,7 @@ router.put("/:id",
     ]),
     adminUserController.updateUser
 );
-
-router.get("/",adminUserController.getAllUser);
+router.patch("/:id/status", adminUserController.updateUserStatus);
 
 router.delete("/:id", adminUserController.deleteUser);
 

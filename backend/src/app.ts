@@ -12,6 +12,9 @@ import notificationRoutes from './routes/notification.routes';
 import messageRoutes from './routes/message.routes';
 import callRoutes from './routes/call.routes';
 import communityRoutes from './routes/community.routes';
+import reportRoutes from './routes/report.routes';
+import adminReportRoutes from './routes/admin/report.route';
+import adminPostRoutes from './routes/admin/post.route';
 
 dotenv.config();
 console.log(process.env.PORT);
@@ -35,6 +38,9 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/calls', callRoutes);
 app.use('/api/chautari', communityRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/admin/reports', adminReportRoutes);
+app.use('/api/admin/posts', adminPostRoutes);
 
 
 app.use((err: Error, req: Request, res: Response, next: Function) => {

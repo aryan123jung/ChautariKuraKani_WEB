@@ -109,12 +109,18 @@
 
 // }
 import { NextFunction, Request, Response } from "express";
-import z, { success } from "zod";
+import z from "zod";
 import { CreateUserDto,UpdateUserDto } from "../../dtos/user.dtos";
 import { AdminUserService } from "../../services/admin/user.services";
 import { QueryParams } from "../../types/query.type";
 
 let adminUserService = new AdminUserService();
+
+const UpdateStatusDto = z.object({
+    action: z.enum(["suspend", "unsuspend", "ban", "unban", "delete"]),
+    suspensionDays: z.number().int().positive().max(365).optional()
+});
+
 export class AdminUserController{
 
     async createUser(req: Request, res: Response) {
@@ -180,6 +186,23 @@ export class AdminUserController{
             return res.status(error.statusCode || 500).json(
                 {success: false,message: error.message || "Internal Server Error"}
             )
+        }
+    }
+
+    async getUserProfile(req: Request, res: Response) {
+        try {
+            const userId = req.params.id;
+            const { page, size }: QueryParams = req.query;
+            const result = await adminUserService.getUserProfileWithPosts(userId, page, size);
+            return res.status(200).json({
+                success: true,
+                data: result,
+                message: "User profile fetched"
+            });
+        } catch (error: Error | any) {
+            return res.status(error.statusCode || 500).json(
+                { success: false, message: error.message || "Internal Server Error" }
+            );
         }
     }
 
@@ -264,6 +287,34 @@ export class AdminUserController{
             return res.status(error.statusCode ?? 500).json(
                 {success: false, message: error.message || "Internal Server Error"}
             )
+        }
+    }
+
+    async updateUserStatus(req: Request, res: Response){
+        try{
+            const userId = req.params.id;
+            const parsedData = UpdateStatusDto.safeParse(req.body);
+            if(!parsedData.success){
+                return res.status(400).json(
+                    {success: false, message: z.prettifyError(parsedData.error)}
+                );
+            }
+
+            const updated = await adminUserService.updateUserStatus(
+                userId,
+                parsedData.data.action,
+                parsedData.data.suspensionDays
+            );
+
+            return res.status(200).json({
+                success: true,
+                message: "User status updated successfully",
+                data: updated
+            });
+        } catch(error: Error | any){
+            return res.status(error.statusCode ?? 500).json(
+                {success: false, message: error.message || "Internal Server Error"}
+            );
         }
     }
 

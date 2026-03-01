@@ -6,49 +6,57 @@ import bcrypt from "bcryptjs";
 describe("ADMIN CONTROLLER - Integration Tests", () => {
   let adminToken: string;
   let createdUserId: string;
-  const adminEmail = `admintest_${Date.now()}@test.com`; // unique email for each run
-
-  beforeAll(async () => {
   const timestamp = Date.now();
   const adminEmail = `admintest_${timestamp}@test.com`;
   const adminUsername = `admintest_${timestamp}`;
+  const regularUserEmail = `normaluser_${timestamp}@test.com`;
+  const createdUserEmail = `newuser_${timestamp}@test.com`;
+  const createdUserUsername = `newuser_${timestamp}`;
 
-  // Removing leftover admin users
-  await UserModel.deleteMany({ $or: [{ email: adminEmail }, { username: adminUsername }] });
-
-  const hashedPassword = await bcrypt.hash("password123", 10);
-
-  // Creating admin
-  await UserModel.create({
-    firstName: "Adminnn",
-    lastName: "User",
-    email: adminEmail,
-    password: hashedPassword,
-    username: adminUsername,
-    role: "admin",
-  });
-
-  // Login admin
-  const login = await request(app)
-    .post("/api/auth/login")
-    .send({
-      email: adminEmail,
-      password: "password123",
+  beforeAll(async () => {
+    await UserModel.deleteMany({
+      $or: [
+        { email: adminEmail },
+        { username: adminUsername },
+        { email: regularUserEmail },
+        { email: createdUserEmail },
+        { username: createdUserUsername }
+      ]
     });
 
-  console.log("Admin login response:", login.body);
+    const hashedPassword = await bcrypt.hash("password123", 10);
 
-  // mero token path
-  if (!login.body.token) throw new Error("Admin login failed");
+    await UserModel.create({
+      firstName: "Admin",
+      lastName: "User",
+      email: adminEmail,
+      password: hashedPassword,
+      username: adminUsername,
+      role: "admin"
+    });
 
-  adminToken = login.body.token;
-});
+    const login = await request(app).post("/api/auth/login").send({
+      email: adminEmail,
+      password: "password123"
+    });
 
+    if (!login.body?.token) {
+      throw new Error(`Admin login failed. Response: ${JSON.stringify(login.body)}`);
+    }
+    adminToken = login.body.token;
+  });
 
 
   afterAll(async () => {
-    // Cleanup: delete any users created during tests
-    await UserModel.deleteMany({ email: /test\.com$/ });
+    await UserModel.deleteMany({
+      $or: [
+        { email: adminEmail },
+        { username: adminUsername },
+        { email: regularUserEmail },
+        { email: createdUserEmail },
+        { username: createdUserUsername }
+      ]
+    });
   });
 
   // 16
@@ -68,13 +76,14 @@ describe("ADMIN CONTROLLER - Integration Tests", () => {
       .send({
         firstName: "New",
         lastName: "User",
-        email: `newuser_${Date.now()}@test.com`,
+        email: createdUserEmail,
         password: "password123",
         confirmPassword: "password123",
-        username: `newuser_${Date.now()}`,
+        username: createdUserUsername
       });
 
     expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
     createdUserId = res.body.data._id;
   });
 
@@ -122,33 +131,28 @@ describe("ADMIN CONTROLLER - Integration Tests", () => {
   });
 
   // 23
-    it("23. Should fail if not admin", async () => {
-    // Creating a regular user for this test
-    const userEmail = `user_${Date.now()}@test.com`;
+  it("23. Should fail if not admin", async () => {
     const hashedPassword = await bcrypt.hash("password123", 10);
     await UserModel.create({
-        firstName: "John",
-        lastName: "Doe",
-        email: userEmail,
-        password: hashedPassword,
-        username: `john${Date.now()}`,
-        role: "user",
+      firstName: "John",
+      lastName: "Doe",
+      email: regularUserEmail,
+      password: hashedPassword,
+      username: `john${timestamp}`,
+      role: "user"
     });
 
-    // Login as regular user
     const userLogin = await request(app)
-        .post("/api/auth/login")
-        .send({ email: userEmail, password: "password123" });
-
-    
+      .post("/api/auth/login")
+      .send({ email: regularUserEmail, password: "password123" });
     const token = userLogin.body.token;
 
     const res = await request(app)
-        .get("/api/admin/users")
-        .set("Authorization", `Bearer ${token}`);
+      .get("/api/admin/users")
+      .set("Authorization", `Bearer ${token}`);
 
     expect(res.status).toBe(403);
-    });
+  });
 
 
   // 24
@@ -159,6 +163,8 @@ describe("ADMIN CONTROLLER - Integration Tests", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.pagination).toBeDefined();
+    expect(res.body.pagination.page).toBe(1);
+    expect(res.body.pagination.size).toBe(5);
   });
 
   // 25
