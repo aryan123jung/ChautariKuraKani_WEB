@@ -6,10 +6,12 @@ import { UserSanctionModel } from "../../models/user-sanction.model";
 import { PostRepository } from "../../repositories/post.repository";
 import { CommunityRepository } from "../../repositories/community.repository";
 import { UserRepository } from "../../repositories/user.repository";
+import { ReportService } from "../report.services";
 
 const postRepo = new PostRepository();
 const communityRepo = new CommunityRepository();
 const userRepo = new UserRepository();
+const reportService = new ReportService();
 
 export class AdminReportService {
   private async createAuditLog(data: {
@@ -109,6 +111,8 @@ export class AdminReportService {
   }
 
   async listReports(query: AdminReportQueryInput) {
+    await reportService.autoResolveOrphanedPendingReports();
+
     const { currentPage, pageSize } = this.getPagination(query.page, query.size);
 
     const filter: Record<string, any> = {};
@@ -151,6 +155,8 @@ export class AdminReportService {
   }
 
   async getReportById(reportId: string) {
+    await reportService.autoResolveOrphanedPendingReports();
+
     const report = await ReportModel.findById(reportId)
       .populate("reporterId", "firstName lastName username email role")
       .populate("assignedTo", "firstName lastName username email role");
@@ -168,6 +174,8 @@ export class AdminReportService {
   }
 
   async getReportStats() {
+    await reportService.autoResolveOrphanedPendingReports();
+
     const [pending, inReview, resolved, rejected, escalated, total] = await Promise.all([
       ReportModel.countDocuments({ status: "pending" }),
       ReportModel.countDocuments({ status: "in_review" }),

@@ -18,18 +18,74 @@ const communityRepo = new CommunityRepository();
 type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number];
 
 export class ReportService {
-  private async ensureTargetExists(targetType: ReportTargetType, targetId: string, reporterId: string) {
+  private async targetExists(targetType: ReportTargetType, targetId: string): Promise<boolean> {
     if (targetType === "post") {
       const post = await postRepo.findById(targetId);
-      if (!post) {
+      return !!post;
+    }
+
+    if (targetType === "community") {
+      const community = await communityRepo.findById(targetId);
+      return !!community;
+    }
+
+    if (targetType === "user") {
+      const user = await userRepo.getUserById(targetId);
+      return !!user;
+    }
+
+    return false;
+  }
+
+  async autoResolveOrphanedPendingReports() {
+    const pendingReports = await ReportModel.find({ status: "pending" }).select(
+      "_id targetType targetId"
+    );
+
+    if (!pendingReports.length) return { checked: 0, resolved: 0 };
+
+    const orphanIds: string[] = [];
+    for (const report of pendingReports) {
+      const exists = await this.targetExists(
+        report.targetType as ReportTargetType,
+        report.targetId.toString()
+      );
+      if (!exists) {
+        orphanIds.push(report._id.toString());
+      }
+    }
+
+    if (!orphanIds.length) {
+      return { checked: pendingReports.length, resolved: 0 };
+    }
+
+    await ReportModel.updateMany(
+      { _id: { $in: orphanIds }, status: "pending" },
+      {
+        $set: {
+          status: "resolved",
+          actionTaken: "none",
+          resolutionNote: "Auto-resolved: target no longer exists",
+          resolvedAt: new Date()
+        }
+      }
+    );
+
+    return { checked: pendingReports.length, resolved: orphanIds.length };
+  }
+
+  private async ensureTargetExists(targetType: ReportTargetType, targetId: string, reporterId: string) {
+    if (targetType === "post") {
+      const exists = await this.targetExists(targetType, targetId);
+      if (!exists) {
         throw new HttpError(404, "Post not found");
       }
       return;
     }
 
     if (targetType === "community") {
-      const community = await communityRepo.findById(targetId);
-      if (!community) {
+      const exists = await this.targetExists(targetType, targetId);
+      if (!exists) {
         throw new HttpError(404, "Chautari not found");
       }
       return;
@@ -85,6 +141,8 @@ export class ReportService {
     reporterId: string,
     { page, size }: { page?: string; size?: string }
   ) {
+    await this.autoResolveOrphanedPendingReports();
+
     const currentPage = page ? parseInt(page) : 1;
     const pageSize = size ? parseInt(size) : 10;
 
