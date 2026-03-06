@@ -4,8 +4,20 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { clearAuthCookies } from "@/lib/cookie";
 import type { SideNavbarProps } from "./schema";
+import { useState } from "react";
+import {
+  Bell,
+  CircleHelp,
+  House,
+  MessageCircle,
+  Settings,
+  Users,
+  Trees,
+} from "lucide-react";
+import DeleteModal from "@/app/_components/DeleteModal";
 
 export default function SideNavbar({ open, onClose, user }: SideNavbarProps) {
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -18,6 +30,7 @@ export default function SideNavbar({ open, onClose, user }: SideNavbarProps) {
 
   const handleLogout = async () => {
     await clearAuthCookies();
+    onClose();
     router.push("/login");
     router.refresh();
   };
@@ -51,23 +64,66 @@ export default function SideNavbar({ open, onClose, user }: SideNavbarProps) {
           </div>
 
           <ul className="p-4 space-y-2">
-            <li><Link href="/user/home" className={sidebarLinkClass("/user/home")}>Home</Link></li>
-            <li><Link href="/user/settings" className={sidebarLinkClass("/user/settings")}>Settings</Link></li>
-            <li><Link href="/user/friends" className={sidebarLinkClass("/user/friends")}>Friends</Link></li>
-            <li><Link href="/user/chautari" className={sidebarLinkClass("/user/chautari")}>Chautari</Link></li>
+            <li>
+              <Link href="/user/home" className={`${sidebarLinkClass("/user/home")} inline-flex items-center gap-2`}>
+                <House size={16} />
+                Home
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/user/settings"
+                className={`${sidebarLinkClass("/user/settings")} inline-flex items-center gap-2`}
+              >
+                <Settings size={16} />
+                Settings
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/user/friends"
+                className={`${sidebarLinkClass("/user/friends")} inline-flex items-center gap-2`}
+              >
+                <Users size={16} />
+                Friends
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/user/chautari"
+                className={`${sidebarLinkClass("/user/chautari")} inline-flex items-center gap-2`}
+              >
+                <Trees size={16} />
+                Chautari
+              </Link>
+            </li>
             <li>
               <button
                 onClick={() => {
                   window.dispatchEvent(new Event("open-notifications-modal"));
                   onClose();
                 }}
-                className="text-black dark:text-zinc-200 hover:text-green-600 hover:underline transition-colors block px-3 py-2 rounded-md w-full text-left"
+                className="text-black dark:text-zinc-200 hover:text-green-600 hover:underline transition-colors block px-3 py-2 rounded-md w-full text-left inline-flex items-center gap-2"
               >
+                <Bell size={16} />
                 Notification
               </button>
             </li>
-            <li><Link href="/user/message" className={sidebarLinkClass("/user/message")}>Messages</Link></li>
-            <li><Link href="/user/help" className={sidebarLinkClass("/user/help")}>Help</Link></li>
+            <li>
+              <Link
+                href="/user/message"
+                className={`${sidebarLinkClass("/user/message")} inline-flex items-center gap-2`}
+              >
+                <MessageCircle size={16} />
+                Messages
+              </Link>
+            </li>
+            <li>
+              <Link href="/user/help" className={`${sidebarLinkClass("/user/help")} inline-flex items-center gap-2`}>
+                <CircleHelp size={16} />
+                Help & Privacy Policy
+              </Link>
+            </li>
           </ul>
         </div>
 
@@ -102,13 +158,23 @@ export default function SideNavbar({ open, onClose, user }: SideNavbarProps) {
           <div className="border-t border-green-700 dark:border-zinc-800 my-3" />
 
           <button
-            onClick={handleLogout}
+            onClick={() => setIsLogoutModalOpen(true)}
             className="w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 rounded-md transition"
           >
             Logout
           </button>
         </div>
       </aside>
+
+      <DeleteModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={() => void handleLogout()}
+        title="Logout"
+        description="Are you sure you want to logout?"
+        cancelLabel="Cancel"
+        confirmLabel="Confirm"
+      />
     </>
   );
 }

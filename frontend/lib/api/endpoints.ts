@@ -5,6 +5,7 @@ export const API = {
         WHOAMI: '/api/auth/whoami',
         SEARCH_USERS: "/api/auth/users",
         GET_USER_BY_ID: (userId: string) => `/api/auth/user/${userId}`,
+        REPORT_USER: (userId: string) => `/api/auth/user/${userId}/report`,
         UPDATEPROFILE: '/api/auth/update-profile',
         REQUEST_PASSWORD_RESET: '/api/auth/send-reset-password-email',
         RESET_PASSWORD: (token: string) => `/api/auth/reset-password/${token}`,
@@ -15,6 +16,7 @@ export const API = {
         GET_ONE: (postId: string) => `/api/post/${postId}`,
         LIKE: (postId: string) => `/api/post/${postId}/like`,
         COMMENTS: (postId: string) => `/api/post/${postId}/comments`,
+        REPORT: (postId: string) => `/api/post/${postId}/report`,
         DELETE_COMMENT: (postId: string, commentId: string) =>
             `/api/post/${postId}/comments/${commentId}`,
         UPDATE: (postId: string) => `/api/post/${postId}`,
@@ -51,6 +53,7 @@ export const API = {
         CREATE: "/api/chautari",
         SEARCH: "/api/chautari/search",
         GET_ONE: (communityId: string) => `/api/chautari/${communityId}`,
+        REPORT: (communityId: string) => `/api/chautari/${communityId}/report`,
         DELETE: (communityId: string) => `/api/chautari/${communityId}`,
         UPDATE: (communityId: string) => `/api/chautari/${communityId}`,
         JOIN: (communityId: string) => `/api/chautari/${communityId}/join`,
@@ -59,13 +62,32 @@ export const API = {
         CREATE_POST: (communityId: string) => `/api/chautari/${communityId}/posts`,
         GET_POSTS: (communityId: string) => `/api/chautari/${communityId}/posts`,
     },
+    Reports: {
+        REPORT_POST: (postId: string) => `/api/reports/post/${postId}`,
+        REPORT_USER: (userId: string) => `/api/reports/user/${userId}`,
+        REPORT_CHAUTARI: (communityId: string) => `/api/reports/chautari/${communityId}`,
+        MY_REPORTS: "/api/reports/my",
+    },
     ADMIN:{
         USER:{
             CREATE: '/api/admin/users',
             ALL: "/api/admin/users", 
             DELETE: (userId: string) => `/api/admin/users/${userId}`,
             UPDATE: (userId: string) => `/api/admin/users/${userId}`,
-            GET_ONE_User: (userId: string) => `/api/admin/users/${userId}`
-        }
+            GET_ONE_User: (userId: string) => `/api/admin/users/${userId}`,
+            GET_PROFILE: (userId: string) => `/api/admin/users/${userId}/profile`,
+            UPDATE_STATUS: (userId: string) => `/api/admin/users/${userId}/status`,
+        },
+        POSTS: {
+            ALL: "/api/admin/posts",
+            DELETE: (postId: string) => `/api/admin/posts/${postId}`,
+        },
+        REPORTS: {
+            STATS: "/api/admin/reports/stats",
+            ALL: "/api/admin/reports",
+            GET_ONE: (reportId: string) => `/api/admin/reports/${reportId}`,
+            ASSIGN: (reportId: string) => `/api/admin/reports/${reportId}/assign`,
+            RESOLVE: (reportId: string) => `/api/admin/reports/${reportId}/resolve`,
+        },
     }
 }

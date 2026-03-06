@@ -179,18 +179,37 @@ export const handleGetFriendCount = async (userId: string) => {
 
 export const handleGetMyFriends = async (page = 1, size = 100) => {
   try {
-    const usersResponse = await searchUsers(undefined, page, size);
-    if (!usersResponse.success) {
+    const firstPageResponse = await searchUsers(undefined, page, size);
+    if (!firstPageResponse.success) {
       return {
         success: false,
         data: [],
-        message: usersResponse.message || "Failed to fetch users",
+        message: firstPageResponse.message || "Failed to fetch users",
       };
     }
 
-    const users = usersResponse.data || [];
+    const totalPages = Math.max(1, firstPageResponse.pagination?.totalPages || 1);
+    const otherPagePromises =
+      totalPages > 1
+        ? Array.from({ length: totalPages - 1 }, (_, index) =>
+            searchUsers(undefined, page + index + 1, size)
+          )
+        : [];
+    const otherPageResponses = await Promise.all(otherPagePromises);
+
+    const allUsers = [
+      ...(firstPageResponse.data || []),
+      ...otherPageResponses.flatMap((response) =>
+        response.success ? response.data || [] : []
+      ),
+    ];
+
+    const dedupedUsers = Array.from(
+      new Map(allUsers.map((user) => [user._id, user])).values()
+    );
+
     const statuses = await Promise.all(
-      users.map(async (user) => {
+      dedupedUsers.map(async (user) => {
         if (!user?._id) return null;
         const statusResponse = await getFriendStatus(user._id);
         if (!statusResponse?.success) return null;

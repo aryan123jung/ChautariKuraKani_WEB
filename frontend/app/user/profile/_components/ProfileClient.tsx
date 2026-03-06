@@ -16,6 +16,9 @@ import {
   handleUnfriendUser,
 } from "@/lib/actions/friend-action";
 import { toast } from "react-toastify";
+import ReportModal from "@/app/user/_components/ReportModal";
+import { handleReportUser } from "@/lib/actions/report-action";
+import type { CreateReportPayload } from "@/lib/api/report";
 
 type FriendStatus =
   | "SELF"
@@ -57,6 +60,8 @@ export default function ProfileClient({
   const [friendStatus, setFriendStatus] = useState<FriendStatus>("NONE");
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [isFriendActionBusy, setIsFriendActionBusy] = useState(false);
+  const [isReportUserOpen, setIsReportUserOpen] = useState(false);
+  const [isReportSubmitting, setIsReportSubmitting] = useState(false);
 
   const profileUserId = user.id || user._id || "";
   const viewerUserId = currentUserId || "";
@@ -105,6 +110,23 @@ export default function ProfileClient({
     }
   };
 
+  const onSubmitUserReport = async (payload: CreateReportPayload) => {
+    if (!profileUserId || isReportSubmitting) return;
+    setIsReportSubmitting(true);
+    try {
+      const response = await handleReportUser(profileUserId, payload);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to report user");
+      }
+      toast.success(response.message || "User reported");
+      setIsReportUserOpen(false);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to report user");
+    } finally {
+      setIsReportSubmitting(false);
+    }
+  };
+
   return (
     <>
       {!isEditing ? (
@@ -148,6 +170,9 @@ export default function ProfileClient({
             if (!profileUserId) return;
             router.push(`/user/message?userId=${profileUserId}`);
           }}
+          onReportUser={
+            canManageProfile ? undefined : () => setIsReportUserOpen(true)
+          }
         />
       ) : (
         <EditProfileForm user={user} onCancel={() => setIsEditing(false)} />
@@ -172,6 +197,14 @@ export default function ProfileClient({
           onPostsChange={setPosts}
         />
       )}
+
+      <ReportModal
+        isOpen={isReportUserOpen}
+        onClose={() => setIsReportUserOpen(false)}
+        targetLabel="User"
+        onSubmit={onSubmitUserReport}
+        isSubmitting={isReportSubmitting}
+      />
     </>
   );
 }

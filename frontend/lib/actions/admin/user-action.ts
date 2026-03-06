@@ -1,8 +1,20 @@
 "use server";
 
-import { createUser, deleteUser, getAllUsers, updateUser, getUserById} from "@/lib/api/admin/user";
+import {
+  createUser,
+  deleteUser,
+  getAllUsers,
+  getUserById,
+  getUserProfileById,
+  updateUser,
+} from "@/lib/api/admin/user";
 import { revalidatePath } from "next/cache";
 import { getUserData, setUserData } from "@/lib/cookie";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error) return error.message;
+  return fallback;
+};
 
 export const handleCreateUser = async (formData: FormData) => {
   try {
@@ -19,10 +31,10 @@ export const handleCreateUser = async (formData: FormData) => {
       success: true,
       data: response.data,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     return {
       success: false,
-      message: error.message || "Create user failed",
+      message: getErrorMessage(error, "Create user failed"),
     };
   }
 };
@@ -48,10 +60,10 @@ export const handleGetAllUsers = async (
             success: false,
             message: response.message || 'Get all users failed'
         }
-    } catch (error: Error | any) {
+    } catch (error: unknown) {
         return {
             success: false,
-            message: error.message || 'Get all users action failed'
+            message: getErrorMessage(error, "Get all users action failed")
         }
     }
 }
@@ -71,8 +83,8 @@ export const handleDeleteUser = async (id: string) => {
             success: false,
             message: response.message || 'Delete user failed'
         }
-    } catch (error: Error | any) {
-        return { success: false, message: error.message || 'Delete user action failed' }
+    } catch (error: unknown) {
+        return { success: false, message: getErrorMessage(error, "Delete user action failed") }
     }
   }
 
@@ -103,8 +115,8 @@ export const handleUpdateUser = async (id: string, formData: FormData) => {
     }
 
     return { success: false, message: response.message || "Update user failed" };
-  } catch (error: any) {
-    return { success: false, message: error.message || "Update user action failed" };
+  } catch (error: unknown) {
+    return { success: false, message: getErrorMessage(error, "Update user action failed") };
   }
 };
 
@@ -125,10 +137,40 @@ export const handleGetOneUser = async (id: string) => {
       success: true,
       data: response.data,
     };
-  } catch (error: Error | any) {
+  } catch (error: unknown) {
     return {
       success: false,
-      message: error.message || "Fetch user failed",
+      message: getErrorMessage(error, "Fetch user failed"),
+    };
+  }
+};
+
+export const handleGetAdminUserProfile = async (
+  id: string,
+  page = 1,
+  size = 10
+) => {
+  try {
+    const response = await getUserProfileById(id, page, size);
+
+    if (!response.success) {
+      return {
+        success: false,
+        message: response.message,
+        data: null,
+      };
+    }
+
+    return {
+      success: true,
+      data: response.data || null,
+      message: response.message || "Fetch user profile successful",
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message: getErrorMessage(error, "Fetch user profile failed"),
+      data: null,
     };
   }
 };

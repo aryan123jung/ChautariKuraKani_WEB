@@ -39,6 +39,29 @@ const getUserId = (user?: string | HomeFriendUser) => {
   return user._id || "";
 };
 
+const getCommunityMemberId = (member?: string | CommunityItem | null) => {
+  if (!member) return "";
+  if (typeof member === "string") return member;
+  return member._id || "";
+};
+
+const sanitizeMyCommunities = (communities: CommunityItem[], currentUserId: string) => {
+  const uniqueById = new Map<string, CommunityItem>();
+
+  communities.forEach((community) => {
+    if (!community?._id) return;
+    uniqueById.set(community._id, community);
+  });
+
+  return Array.from(uniqueById.values()).filter((community) => {
+    const isOwner = getCommunityMemberId(community.creatorId) === currentUserId;
+    const isMember = (community.members || []).some(
+      (member) => getCommunityMemberId(member) === currentUserId
+    );
+    return isOwner || isMember;
+  });
+};
+
 export default function LeftSidebar({
   friends = [],
   conversations = [],
@@ -84,7 +107,12 @@ export default function LeftSidebar({
         const communities = responses
           .filter((response) => response?.success && response?.data)
           .map((response) => response.data as CommunityItem);
-        setMyChautari(communities);
+        const sanitized = sanitizeMyCommunities(communities, currentUserId);
+        setMyChautari(sanitized);
+        window.localStorage.setItem(
+          MY_CHAUTARI_IDS_KEY,
+          JSON.stringify(sanitized.map((community) => community._id).filter(Boolean))
+        );
       })
       .catch(() => {
         if (isCancelled) return;
@@ -94,7 +122,7 @@ export default function LeftSidebar({
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [currentUserId]);
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden">

@@ -11,9 +11,12 @@ import {
   handleLikePost,
   handleUpdatePost,
 } from "@/lib/actions/post-action";
+import { handleReportPost } from "@/lib/actions/report-action";
 import DeleteModal from "@/app/_components/DeleteModal";
 import type { PostItem } from "../schema";
 import CommentsModal from "./CommentsModal";
+import ReportModal from "@/app/user/_components/ReportModal";
+import type { CreateReportPayload } from "@/lib/api/report";
 
 type PostUIState = {
   commentInput: string;
@@ -90,6 +93,8 @@ export default function ProfilePostsWidget({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletePost, setDeletePost] = useState<PostItem | null>(null);
   const [commentsModalPostId, setCommentsModalPostId] = useState<string | null>(null);
+  const [reportPostId, setReportPostId] = useState<string | null>(null);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
   const getState = (post: PostItem) => uiState[post._id] || initStateForPost(post);
 
@@ -306,6 +311,23 @@ export default function ProfilePostsWidget({
     setDeletePost(null);
   };
 
+  const onSubmitReport = async (payload: CreateReportPayload) => {
+    if (!reportPostId || isSubmittingReport) return;
+    setIsSubmittingReport(true);
+    try {
+      const response = await handleReportPost(reportPostId, payload);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to report post");
+      }
+      toast.success(response.message || "Post reported");
+      setReportPostId(null);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to report post");
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
   return (
     <section className="mt-8 rounded-3xl border border-slate-200 bg-white/95 p-4 shadow-lg shadow-slate-200/40 sm:p-6 dark:border-zinc-800 dark:bg-zinc-950/95 dark:shadow-black/40">
       <div className="mb-6 flex items-center justify-between">
@@ -367,29 +389,44 @@ export default function ProfilePostsWidget({
                       <MoreHorizontal size={18} />
                     </button>
 
-                    {state.isMenuOpen && canManagePosts && (
+                    {state.isMenuOpen && (
                       <div className="absolute right-0 z-10 mt-2 w-36 overflow-hidden rounded-xl border border-slate-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg">
-                        <button
-                          onClick={() =>
-                            updateState(post._id, {
-                              isEditing: true,
-                              isMenuOpen: false,
-                              editCaption: post.caption || "",
-                            })
-                          }
-                          className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800"
-                        >
-                          Edit Post
-                        </button>
-                        <button
-                          onClick={() => {
-                            setDeletePost(post);
-                            setIsDeleteModalOpen(true);
-                          }}
-                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        >
-                          Delete Post
-                        </button>
+                        {canManagePosts ? (
+                          <>
+                            <button
+                              onClick={() =>
+                                updateState(post._id, {
+                                  isEditing: true,
+                                  isMenuOpen: false,
+                                  editCaption: post.caption || "",
+                                })
+                              }
+                              className="w-full px-4 py-2 text-left text-sm text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800"
+                            >
+                              Edit Post
+                            </button>
+                            <button
+                              onClick={() => {
+                                updateState(post._id, { isMenuOpen: false });
+                                setDeletePost(post);
+                                setIsDeleteModalOpen(true);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            >
+                              Delete Post
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => {
+                              updateState(post._id, { isMenuOpen: false });
+                              setReportPostId(post._id);
+                            }}
+                            className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                          >
+                            Report Post
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -551,6 +588,14 @@ export default function ProfilePostsWidget({
         isBusy={
           activeCommentPost ? getState(activeCommentPost).isBusy : false
         }
+      />
+
+      <ReportModal
+        isOpen={Boolean(reportPostId)}
+        onClose={() => setReportPostId(null)}
+        targetLabel="Post"
+        onSubmit={onSubmitReport}
+        isSubmitting={isSubmittingReport}
       />
     </section>
   );

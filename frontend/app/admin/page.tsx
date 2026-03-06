@@ -1,22 +1,6 @@
-import DashboardStats from "./_components/DashboardStats";
-import DashboardCards from "./_components/DashboardCards";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return (
-    <div className="space-y-6">
-      <DashboardStats />
-      <DashboardCards />
-    </div>
-  );
+export default function AdminPage() {
+  redirect("/admin/dashboard");
 }
-
-export type AdminUser = {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  username: string;
-  profileUrl?: string;
-  role: "user" | "admin";
-};
 

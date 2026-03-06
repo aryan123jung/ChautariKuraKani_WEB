@@ -4,6 +4,8 @@ interface DeleteModalProps {
   onConfirm: () => void;
   title: string;
   description: string;
+  cancelLabel?: string;
+  confirmLabel?: string;
 }
 
 export default function DeleteModal({
@@ -12,6 +14,8 @@ export default function DeleteModal({
   onConfirm,
   title,
   description,
+  cancelLabel = "Cancel",
+  confirmLabel = "Delete",
 }: DeleteModalProps) {
   if (!isOpen) return null;
 
@@ -45,7 +49,7 @@ export default function DeleteModal({
               onClick={onClose}
               className="flex-1 px-6 py-3.5 text-sm font-medium text-gray-300 bg-gray-800 hover:bg-gray-700 rounded-xl transition-all duration-200 border border-gray-700 hover:border-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-700 focus:ring-offset-2 focus:ring-offset-gray-900"
             >
-              Cancel
+              {cancelLabel}
             </button>
             <button
               onClick={() => {
@@ -54,7 +58,7 @@ export default function DeleteModal({
               }}
               className="flex-1 px-6 py-3.5 text-sm font-medium text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl transition-all duration-200 shadow-lg hover:shadow-red-500/20 border border-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 focus:ring-offset-gray-900"
             >
-              Delete
+              {confirmLabel}
             </button>
           </div>
 

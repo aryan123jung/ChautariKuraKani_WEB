@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { MoreHorizontal } from "lucide-react";
+
 type FriendStatus =
   | "SELF"
   | "NONE"
@@ -26,6 +29,7 @@ export default function ProfileDetails({
   onRejectRequest,
   onUnfriend,
   onMessage,
+  onReportUser,
   postsCount = 0,
   friendsCount = 0,
 }: {
@@ -41,9 +45,12 @@ export default function ProfileDetails({
   onRejectRequest?: () => void;
   onUnfriend?: () => void;
   onMessage?: () => void;
+  onReportUser?: () => void;
   postsCount?: number;
   friendsCount?: number;
 }) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
   const renderFriendActions = () => {
     if (friendStatus === "PENDING_INCOMING") {
       return (
@@ -159,8 +166,29 @@ export default function ProfileDetails({
       )}
 
       {!canManageProfile && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           {renderFriendActions()}
+          <div className="relative">
+            <button
+              onClick={() => setIsMenuOpen((prev) => !prev)}
+              className="rounded-xl border border-slate-300 bg-white p-2 text-slate-600 transition hover:bg-slate-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <MoreHorizontal size={18} />
+            </button>
+            {isMenuOpen && (
+              <div className="absolute right-0 z-10 mt-2 w-36 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onReportUser?.();
+                  }}
+                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  Report User
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

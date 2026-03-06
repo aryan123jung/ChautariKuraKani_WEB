@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, Moon, Search, Sun } from "lucide-react";
+import { Bell, Menu, Moon, Search, Sun } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
@@ -675,11 +675,14 @@ export default function TopNavbar({ onMenuClick }: NavbarProps) {
               setIsNotificationOpen(next);
               if (next) void fetchNotificationCenter();
             }}
-            className={`relative rounded-full p-1 transition ${
-              theme === "dark" ? "hover:bg-zinc-800" : "hover:bg-gray-100"
+            className={`relative rounded-full border p-2 transition ${
+              theme === "dark"
+                ? "border-zinc-700 bg-zinc-900 text-zinc-100 hover:bg-zinc-800"
+                : "border-gray-300 bg-white/80 text-gray-900 hover:bg-white"
             }`}
+            aria-label="Open notifications"
           >
-            <Image src="/image/notification.ico" alt="Notification" width={24} height={24} />
+            <Bell size={18} />
             {unreadCount > 0 && (
               <span className="absolute -right-1 -top-1 min-w-5 rounded-full bg-red-600 px-1 text-center text-[10px] font-semibold text-white">
                 {unreadCount > 9 ? "9+" : unreadCount}

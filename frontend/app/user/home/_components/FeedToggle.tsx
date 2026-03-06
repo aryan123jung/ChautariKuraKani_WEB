@@ -44,6 +44,15 @@ import HomeFeed from "./HomeFeed";
 import FriendsFeed from "./FriendsFeed";
 import type { PostItem } from "@/app/user/profile/schema";
 
+const isCommunityPost = (post: PostItem) => {
+  const postWithContext = post as PostItem & {
+    communityId?: unknown;
+    chautariId?: unknown;
+  };
+
+  return Boolean(postWithContext.communityId || postWithContext.chautariId);
+};
+
 export default function FeedToggle({
   currentUserId,
   posts,
@@ -54,7 +63,9 @@ export default function FeedToggle({
   friendIds: string[];
 }) {
   const [feed, setFeed] = useState<"home" | "friends">("home");
-  const [feedPosts, setFeedPosts] = useState<PostItem[]>(posts);
+  const [feedPosts, setFeedPosts] = useState<PostItem[]>(
+    posts.filter((post) => !isCommunityPost(post))
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -77,6 +88,7 @@ export default function FeedToggle({
         {feed === "home" ? (
           <HomeFeed
             currentUserId={currentUserId}
+            friendIds={friendIds}
             posts={feedPosts}
             onPostsChange={setFeedPosts}
           />

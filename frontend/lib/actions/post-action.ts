@@ -7,6 +7,7 @@ import {
   deleteComment,
   deletePost,
   getAllPosts,
+  getPostById,
   likePost,
   updatePost,
 } from "../api/post";
@@ -71,6 +72,32 @@ export const handleGetAllPosts = async (page = 1, size = 10) => {
       message: getErrorMessage(error, "Fetch posts action failed"),
       data: [],
       pagination: null,
+    };
+  }
+};
+
+export const handleGetPostById = async (postId: string) => {
+  try {
+    const response = await getPostById(postId);
+
+    if (response.success) {
+      return {
+        success: true,
+        message: response.message || "Post fetched successfully",
+        data: response.data,
+      };
+    }
+
+    return {
+      success: false,
+      message: response.message || "Failed to fetch post",
+      data: null,
+    };
+  } catch (error: unknown) {
+    return {
+      success: false,
+      message: getErrorMessage(error, "Fetch post action failed"),
+      data: null,
     };
   }
 };

@@ -6,10 +6,13 @@ import {
   handleDeleteComment,
   handleLikePost,
 } from "@/lib/actions/post-action";
-import { MessageCircle, ThumbsUp } from "lucide-react";
+import { MessageCircle, MoreHorizontal, ThumbsUp } from "lucide-react";
 import { toast } from "react-toastify";
 import { useState } from "react";
 import CommentsModal from "@/app/user/profile/_components/CommentsModal";
+import ReportModal from "@/app/user/_components/ReportModal";
+import { handleReportPost } from "@/lib/actions/report-action";
+import type { CreateReportPayload } from "@/lib/api/report";
 
 const getAuthorId = (author: PostItem["authorId"]) => {
   if (!author) return "";
@@ -41,19 +44,28 @@ const buildMediaUrl = (mediaUrl: string, mediaType: "image" | "video") => {
 
 export default function HomeFeed({
   currentUserId,
+  friendIds,
   posts,
   onPostsChange,
 }: {
   currentUserId: string;
+  friendIds: string[];
   posts: PostItem[];
   onPostsChange: (posts: PostItem[]) => void;
 }) {
   const [busyPostId, setBusyPostId] = useState<string | null>(null);
   const [commentsModalPostId, setCommentsModalPostId] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState("");
+  const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null);
+  const [reportPostId, setReportPostId] = useState<string | null>(null);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
 
+  const friendIdSet = new Set(friendIds);
   const filteredPosts = posts.filter(
-    (post) => getAuthorId(post.authorId) !== currentUserId
+    (post) => {
+      const authorId = getAuthorId(post.authorId);
+      return authorId !== currentUserId && !friendIdSet.has(authorId);
+    }
   );
 
   const activeCommentPost = commentsModalPostId
@@ -175,6 +187,23 @@ export default function HomeFeed({
     }
   };
 
+  const onSubmitReport = async (payload: CreateReportPayload) => {
+    if (!reportPostId || isSubmittingReport) return;
+    setIsSubmittingReport(true);
+    try {
+      const response = await handleReportPost(reportPostId, payload);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to report post");
+      }
+      toast.success(response.message || "Post reported");
+      setReportPostId(null);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to report post");
+    } finally {
+      setIsSubmittingReport(false);
+    }
+  };
+
   if (filteredPosts.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-300 p-6 text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">
@@ -195,24 +224,51 @@ export default function HomeFeed({
             className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
           >
             <div className="p-4">
-              <div className="mb-2 flex items-center gap-2">
-                <div className="h-10 w-10 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
-                  {authorImage ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={authorImage} alt={authorName} className="h-full w-full object-cover" />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-700 dark:text-zinc-200">
-                      {authorName.slice(0, 1).toUpperCase()}
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="h-10 w-10 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
+                    {authorImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={authorImage} alt={authorName} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-700 dark:text-zinc-200">
+                        {authorName.slice(0, 1).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
+                      {authorName}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-zinc-400">
+                      {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative">
+                  <button
+                    onClick={() =>
+                      setOpenMenuPostId((prev) => (prev === post._id ? null : post._id))
+                    }
+                    className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                  >
+                    <MoreHorizontal size={16} />
+                  </button>
+
+                  {openMenuPostId === post._id && (
+                    <div className="absolute right-0 z-10 mt-1 w-32 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-md dark:border-zinc-700 dark:bg-zinc-900">
+                      <button
+                        onClick={() => {
+                          setReportPostId(post._id);
+                          setOpenMenuPostId(null);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        Report Post
+                      </button>
                     </div>
                   )}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
-                    {authorName}
-                  </p>
-                  <p className="text-xs text-slate-500 dark:text-zinc-400">
-                    {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
-                  </p>
                 </div>
               </div>
 
@@ -293,6 +349,14 @@ export default function HomeFeed({
           activeCommentPost ? getCommentAvatarUrl(comment, activeCommentPost) : null
         }
         isBusy={Boolean(busyPostId)}
+      />
+
+      <ReportModal
+        isOpen={Boolean(reportPostId)}
+        onClose={() => setReportPostId(null)}
+        targetLabel="Post"
+        onSubmit={onSubmitReport}
+        isSubmitting={isSubmittingReport}
       />
     </div>
   );

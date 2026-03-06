@@ -46,6 +46,15 @@ export const getAllPosts = async (page = 1, size = 10) => {
   }
 };
 
+export const getPostById = async (postId: string) => {
+  try {
+    const response = await axios.get(API.Post.GET_ONE(postId));
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(getErrorMessage(error, "Fetch post failed"));
+  }
+};
+
 export const updatePost = async (postId: string, postData: FormData) => {
   try {
     const response = await axios.put(API.Post.UPDATE(postId), postData, {

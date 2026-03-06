@@ -67,7 +67,6 @@ export default function CallModal({
             <div className="mb-4 flex items-center gap-3">
               <div className="h-14 w-14 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
                 {callAvatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={callAvatar} alt={callName} className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-700 dark:text-zinc-200">

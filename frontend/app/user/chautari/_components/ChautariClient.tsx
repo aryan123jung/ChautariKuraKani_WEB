@@ -18,60 +18,32 @@ import {
   handleLikePost,
   handleUpdatePost,
 } from "@/lib/actions/post-action";
-import { Loader2, MessageCircle, Pencil, ThumbsUp, Trash2, Users } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { handleReportChautari } from "@/lib/actions/report-action";
+import type { CreateReportPayload } from "@/lib/api/report";
+import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
+import ReportModal from "@/app/user/_components/ReportModal";
 import type {
   CommunityItem,
   CommunityPost,
   CommunityPostComment,
-  CommunityUser,
 } from "../schema";
 import CommunityCommentsModal from "./CommunityCommentsModal";
+import CommunityFeedPanel from "./CommunityFeedPanel";
 import CreateCommunityModal from "./CreateCommunityModal";
 import CreateChautariPostModal from "./CreateChautariPostModal";
 import DeleteModal from "./DeleteModal";
 import EditCommunityModal from "./EditCommunityModal";
 import EditChautariPostModal from "./EditChautariPostModal";
 import MyChautariSidebar from "./MyChautariSidebar";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:6060";
-const MY_CHAUTARI_IDS_KEY = "my_chautari_ids";
-
-const getEntityId = (entity?: string | CommunityUser | CommunityItem | null) => {
-  if (!entity) return "";
-  if (typeof entity === "string") return entity;
-  return entity._id || "";
-};
-
-const getUserName = (user?: string | CommunityUser) => {
-  if (!user || typeof user === "string") return "User";
-  const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim();
-  return fullName || user.username || "User";
-};
-
-const buildProfileImageUrl = (profileUrl?: string) => {
-  if (!profileUrl) return null;
-  return `${BACKEND_URL}/uploads/profile/${profileUrl}`;
-};
-
-const buildCommunityProfileImageUrl = (profileUrl?: string) => {
-  if (!profileUrl) return null;
-  return `${BACKEND_URL}/uploads/chautari/profile/${profileUrl}`;
-};
-
-const buildPostMediaUrl = (mediaUrl?: string, mediaType?: "image" | "video") => {
-  if (!mediaUrl || !mediaType) return null;
-  const folder = mediaType === "video" ? "videos" : "images";
-  return `${BACKEND_URL}/uploads/posts/${folder}/${mediaUrl}`;
-};
-
-const normalizeCommunityName = (name: string) => {
-  const trimmed = name.trim();
-  if (!trimmed) return "";
-  if (trimmed.toLowerCase().startsWith("c/")) return trimmed;
-  return `c/${trimmed}`;
-};
+import {
+  MY_CHAUTARI_IDS_KEY,
+  getEntityId,
+  getCommentAuthorName,
+  getCommentAvatarUrl,
+  getCommentUserId,
+  normalizeCommunityName,
+} from "./chautari-utils";
 
 export default function ChautariClient({
   currentUserId,
@@ -113,6 +85,9 @@ export default function ChautariClient({
   const [postModalSession, setPostModalSession] = useState(0);
   const [creatingPost, setCreatingPost] = useState(false);
   const [busyPostId, setBusyPostId] = useState<string | null>(null);
+  const [isCommunityMenuOpen, setIsCommunityMenuOpen] = useState(false);
+  const [isReportCommunityOpen, setIsReportCommunityOpen] = useState(false);
+  const [isSubmittingCommunityReport, setIsSubmittingCommunityReport] = useState(false);
   const [commentsModalPostId, setCommentsModalPostId] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState("");
 
@@ -132,9 +107,28 @@ export default function ChautariClient({
 
   const persistMyCommunityIds = (items: CommunityItem[]) => {
     if (typeof window === "undefined") return;
-    const ids = items.map((item) => item._id).filter(Boolean);
+    const ids = Array.from(
+      new Set(items.map((item) => item._id).filter(Boolean))
+    );
     window.localStorage.setItem(MY_CHAUTARI_IDS_KEY, JSON.stringify(ids));
   };
+
+  const sanitizeMyCommunities = useCallback((communities: CommunityItem[]) => {
+    const uniqueById = new Map<string, CommunityItem>();
+
+    communities.forEach((community) => {
+      if (!community?._id) return;
+      uniqueById.set(community._id, community);
+    });
+
+    return Array.from(uniqueById.values()).filter((community) => {
+      const isOwner = getEntityId(community.creatorId) === currentUserId;
+      const isMember = (community.members || []).some(
+        (member) => getEntityId(member) === currentUserId
+      );
+      return isOwner || isMember;
+    });
+  }, [currentUserId]);
 
   const upsertMyCommunity = (community: CommunityItem) => {
     const joined = (community.members || []).some(
@@ -371,6 +365,24 @@ export default function ChautariClient({
     }
   };
 
+  const onSubmitCommunityReport = async (payload: CreateReportPayload) => {
+    if (!selectedCommunityId || isSubmittingCommunityReport) return;
+
+    setIsSubmittingCommunityReport(true);
+    try {
+      const response = await handleReportChautari(selectedCommunityId, payload);
+      if (!response.success) {
+        throw new Error(response.message || "Failed to report chautari");
+      }
+      toast.success(response.message || "Chautari reported");
+      setIsReportCommunityOpen(false);
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : "Failed to report chautari");
+    } finally {
+      setIsSubmittingCommunityReport(false);
+    }
+  };
+
   const onCreatePost = async ({
     caption,
     file,
@@ -448,31 +460,6 @@ export default function ChautariClient({
 
   const hasLiked = (post: CommunityPost) =>
     (post.likes || []).some((likedBy) => likedBy?.toString() === currentUserId);
-
-  const getCommentUserId = (comment: CommunityPostComment) => {
-    if (!comment.userId) return "";
-    if (typeof comment.userId === "string") return comment.userId;
-    return comment.userId._id || "";
-  };
-
-  const getCommentAuthorName = (comment: CommunityPostComment) => {
-    const commentUserId = getCommentUserId(comment);
-    if (commentUserId && commentUserId === currentUserId) return "You";
-
-    if (comment.userId && typeof comment.userId !== "string") {
-      const fullName = `${comment.userId.firstName || ""} ${comment.userId.lastName || ""}`.trim();
-      if (fullName) return fullName;
-    }
-
-    return "User";
-  };
-
-  const getCommentAvatarUrl = (comment: CommunityPostComment) => {
-    if (comment.userId && typeof comment.userId !== "string") {
-      return buildProfileImageUrl(comment.userId.profileUrl || comment.userId.profileImage);
-    }
-    return null;
-  };
 
   const canDeleteComment = (comment: CommunityPostComment) => {
     const commentUserId = getCommentUserId(comment);
@@ -567,10 +554,11 @@ export default function ChautariClient({
         .filter((response) => response.success && response.data)
         .map((response) => response.data as CommunityItem);
 
-      setMyCommunities(communities);
-      persistMyCommunityIds(communities);
+      const sanitized = sanitizeMyCommunities(communities);
+      setMyCommunities(sanitized);
+      persistMyCommunityIds(sanitized);
     });
-  }, []);
+  }, [sanitizeMyCommunities]);
 
   useEffect(() => {
     if (!initialCommunityId) return;
@@ -582,251 +570,41 @@ export default function ChautariClient({
   return (
     <div className="h-[calc(100vh-80px)] overflow-hidden p-4">
       <div className="grid h-full grid-cols-1 gap-4 xl:grid-cols-[20rem_minmax(0,1fr)]">
-
-        <section className="flex h-full min-h-0 flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm xl:order-2 dark:border-zinc-800 dark:bg-zinc-900">
-          {!selectedCommunity && (
-            <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">
-              Select a Chautari to view posts.
-            </div>
-          )}
-
-          {selectedCommunity && (
-            <>
-              <div className="mb-4 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-zinc-700 dark:bg-zinc-950">
-                {loadingCommunity ? (
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-zinc-300">
-                    <Loader2 size={16} className="animate-spin" />
-                    Loading community...
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="flex items-start gap-3">
-                        {(() => {
-                          const selectedCommunityAvatar = buildCommunityProfileImageUrl(
-                            selectedCommunity.profileUrl
-                          );
-                          return (
-                        <div className="h-12 w-12 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
-                          {selectedCommunityAvatar ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={selectedCommunityAvatar}
-                              alt={selectedCommunity.name || selectedCommunity.slug || "Community"}
-                              className="h-full w-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-700 dark:text-zinc-200">
-                              {(selectedCommunity.name || selectedCommunity.slug || "C")
-                                .slice(0, 1)
-                                .toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                          );
-                        })()}
-                        <div>
-                          <h2 className="text-xl font-bold text-slate-900 dark:text-zinc-100">
-                            {selectedCommunity.name ||
-                              (selectedCommunity.slug ? `c/${selectedCommunity.slug}` : "c/community")}
-                          </h2>
-                          <p className="mt-1 text-sm text-slate-600 dark:text-zinc-300">
-                            {selectedCommunity.description || "No description provided"}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPostModalSession((prev) => prev + 1);
-                            setIsCreatePostOpen(true);
-                          }}
-                          disabled={!isJoined}
-                          className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-slate-700 disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                        >
-                          Add Post
-                        </button>
-                        {isCreator && (
-                          <button
-                            type="button"
-                            onClick={onOpenEditCommunity}
-                            disabled={updatingCommunity}
-                            className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-                          >
-                            <Pencil size={14} />
-                            Edit
-                          </button>
-                        )}
-                        {isCreator && (
-                          <button
-                            type="button"
-                            onClick={() => setIsDeleteModalOpen(true)}
-                            disabled={deletingCommunity}
-                            className="inline-flex items-center gap-1 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-60 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
-                          >
-                            <Trash2 size={14} />
-                            {deletingCommunity ? "Deleting..." : "Delete"}
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => void onJoinOrLeave()}
-                          disabled={joiningOrLeaving}
-                          className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
-                            isJoined
-                              ? "bg-slate-200 text-slate-900 hover:bg-slate-300 dark:bg-zinc-700 dark:text-zinc-100 dark:hover:bg-zinc-600"
-                              : "bg-slate-900 text-white hover:bg-slate-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                          } disabled:opacity-60`}
-                        >
-                          {joiningOrLeaving ? "Please wait..." : isJoined ? "Leave" : "Join"}
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-slate-500 dark:text-zinc-400">
-                      <span className="inline-flex items-center gap-1">
-                        <Users size={14} />
-                        {memberCount} members
-                      </span>
-                      <span>
-                        Created{" "}
-                        {selectedCommunity.createdAt
-                          ? new Date(selectedCommunity.createdAt).toLocaleDateString()
-                          : "-"}
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-
-              <div className="min-h-0 flex-1 overflow-y-auto scrollbar-feed pr-1">
-                <div className="space-y-3">
-                  {posts.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-300 p-4 text-sm text-slate-500 dark:border-zinc-700 dark:text-zinc-400">
-                      No posts in this community yet.
-                    </div>
-                  ) : (
-                    posts.map((post) => {
-                      const authorName = getUserName(post.authorId);
-                      const authorAvatar =
-                        post.authorId && typeof post.authorId !== "string"
-                          ? buildProfileImageUrl(post.authorId.profileUrl)
-                          : null;
-                      const mediaUrl = buildPostMediaUrl(post.mediaUrl, post.mediaType);
-
-                      return (
-                        <article
-                          key={post._id}
-                          className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
-                        >
-                          <div className="p-4">
-                            <div className="mb-3 flex items-start justify-between gap-3">
-                              <div className="flex items-center gap-2">
-                              <div className="h-10 w-10 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
-                                {authorAvatar ? (
-                                  // eslint-disable-next-line @next/next/no-img-element
-                                  <img src={authorAvatar} alt={authorName} className="h-full w-full object-cover" />
-                                ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-xs font-semibold text-slate-700 dark:text-zinc-200">
-                                    {authorName.slice(0, 1).toUpperCase()}
-                                  </div>
-                                )}
-                              </div>
-
-                              <div>
-                                <p className="text-sm font-semibold text-slate-900 dark:text-zinc-100">
-                                  {authorName}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-zinc-400">
-                                  {post.createdAt ? new Date(post.createdAt).toLocaleString() : ""}
-                                </p>
-                              </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {canEditPost(post) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingPost(post)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-slate-300 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-200 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:bg-zinc-700"
-                                  >
-                                    <Pencil size={12} />
-                                    Edit
-                                  </button>
-                                )}
-                                {canDeletePost(post) && (
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setDeletePostTargetId(post._id);
-                                      setIsDeletePostModalOpen(true);
-                                    }}
-                                    className="rounded-lg border border-red-300 bg-red-50 px-2.5 py-1 text-[11px] font-semibold text-red-700 transition hover:bg-red-100 dark:border-red-800 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
-                                  >
-                                    Delete
-                                  </button>
-                                )}
-                              </div>
-                            </div>
-
-                            {post.caption && (
-                              <p className="whitespace-pre-wrap text-sm text-slate-800 dark:text-zinc-200">
-                                {post.caption}
-                              </p>
-                            )}
-                          </div>
-
-                          {mediaUrl && post.mediaType === "image" && (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={mediaUrl}
-                              alt="Community post media"
-                              className="max-h-[32rem] w-full object-cover"
-                            />
-                          )}
-
-                          {mediaUrl && post.mediaType === "video" && (
-                            <video src={mediaUrl} controls className="w-full bg-black" />
-                          )}
-
-                          <div className="border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-zinc-800 dark:text-zinc-400">
-                            <div className="mb-2 flex items-center justify-between">
-                              <span>{post.likes?.length || 0} likes</span>
-                              <span>{post.commentsCount || post.comments?.length || 0} comments</span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              <button
-                                onClick={() => void onLikePost(post._id)}
-                                disabled={busyPostId === post._id}
-                                className={`flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-semibold transition ${
-                                  hasLiked(post)
-                                    ? "bg-green-50 text-green-700 dark:bg-zinc-700 dark:text-green-300"
-                                    : "hover:bg-slate-100 dark:hover:bg-zinc-800"
-                                } disabled:opacity-60`}
-                              >
-                                <ThumbsUp size={14} />
-                                Like
-                              </button>
-                              <button
-                                onClick={() => onOpenComments(post._id)}
-                                disabled={busyPostId === post._id}
-                                className="flex items-center justify-center gap-2 rounded-lg py-1.5 text-xs font-semibold transition hover:bg-slate-100 dark:hover:bg-zinc-800 disabled:opacity-60"
-                              >
-                                <MessageCircle size={14} />
-                                Comment
-                              </button>
-                            </div>
-                          </div>
-                        </article>
-                      );
-                    })
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </section>
+        <CommunityFeedPanel
+          selectedCommunity={selectedCommunity}
+          loadingCommunity={loadingCommunity}
+          memberCount={memberCount}
+          posts={posts}
+          isJoined={isJoined}
+          isCreator={isCreator}
+          joiningOrLeaving={joiningOrLeaving}
+          deletingCommunity={deletingCommunity}
+          updatingCommunity={updatingCommunity}
+          isCommunityMenuOpen={isCommunityMenuOpen}
+          busyPostId={busyPostId}
+          onToggleCommunityMenu={() => setIsCommunityMenuOpen((prev) => !prev)}
+          onOpenReportCommunity={() => {
+            setIsCommunityMenuOpen(false);
+            setIsReportCommunityOpen(true);
+          }}
+          onOpenEditCommunity={onOpenEditCommunity}
+          onOpenCreatePost={() => {
+            setPostModalSession((prev) => prev + 1);
+            setIsCreatePostOpen(true);
+          }}
+          onOpenDeleteCommunity={() => setIsDeleteModalOpen(true)}
+          onJoinOrLeave={() => void onJoinOrLeave()}
+          canEditPost={canEditPost}
+          canDeletePost={canDeletePost}
+          onOpenEditPost={(post) => setEditingPost(post)}
+          onOpenDeletePost={(postId) => {
+            setDeletePostTargetId(postId);
+            setIsDeletePostModalOpen(true);
+          }}
+          hasLiked={hasLiked}
+          onLikePost={(postId) => void onLikePost(postId)}
+          onOpenComments={onOpenComments}
+        />
 
         <MyChautariSidebar
           myCommunities={myCommunities}
@@ -887,7 +665,7 @@ export default function ChautariClient({
         onSubmitComment={() => void onSubmitComment()}
         onDeleteComment={(commentId) => void onDeleteCommentForPost(commentId)}
         canDeleteComment={canDeleteComment}
-        getCommentAuthorName={getCommentAuthorName}
+        getCommentAuthorName={(comment) => getCommentAuthorName(comment, currentUserId)}
         getCommentAvatarUrl={getCommentAvatarUrl}
         isBusy={busyPostId === commentsModalPostId}
       />
@@ -922,6 +700,14 @@ export default function ChautariClient({
         initialCaption={editingPost?.caption || ""}
         onClose={() => setEditingPost(null)}
         onSubmit={(payload) => void onEditPost(payload)}
+      />
+
+      <ReportModal
+        isOpen={isReportCommunityOpen}
+        onClose={() => setIsReportCommunityOpen(false)}
+        targetLabel="Chautari"
+        onSubmit={(payload) => void onSubmitCommunityReport(payload)}
+        isSubmitting={isSubmittingCommunityReport}
       />
     </div>
   );

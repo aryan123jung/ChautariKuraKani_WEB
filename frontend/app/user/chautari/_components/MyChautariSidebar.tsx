@@ -82,7 +82,6 @@ export default function MyChautariSidebar({
                       <div className="flex min-w-0 items-center gap-2">
                         <div className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-slate-200 dark:bg-zinc-700">
                           {communityAvatar ? (
-                            // eslint-disable-next-line @next/next/no-img-element
                             <img
                               src={communityAvatar}
                               alt={communityName}
